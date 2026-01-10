@@ -11,6 +11,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
+
       if (!data.user) {
         router.push("/login");
       } else {
@@ -21,7 +22,9 @@ export default function DashboardPage() {
     checkUser();
   }, [router]);
 
-  if (loading) return <p>Loading…</p>;
+  if (loading) {
+    return <p>Loading…</p>;
+  }
 
   return (
     <div>
