@@ -26,19 +26,21 @@ export default function DashboardPage() {
     return <p>Loading…</p>;
   }
 
-return (
-  <div>
-    <h1>Black Rabbit</h1>
-    <p>Daily Briefing will appear here.</p>
+  return (
+    <div>
+      <h1>Black Rabbit</h1>
+      <p>Daily Briefing will appear here.</p>
 
-    <button
-      onClick={async () => {
-        await supabase.auth.signOut();
-        router.push("/login");
-      }}
-    >
-      Log out
-    </button>
-  </div>
-);
+      <button
+        onClick={async () => {
+          await supabase.auth.signOut();
+          router.push("/login");
+        }}
+      >
+        Log out
+      </button>
+    </div>
+  );
+}
+
 
