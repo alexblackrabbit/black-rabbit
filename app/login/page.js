@@ -11,7 +11,6 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
 
   const handleLogin = async () => {
-    // Clear any previous error
     setError(null);
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -27,15 +26,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div>
-      <h1>Login</h1>
+    <>
+      <h1>Log in</h1>
+      <p>Decision intelligence for serious teams.</p>
 
       <input
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
-      <br />
 
       <input
         type="password"
@@ -43,16 +42,14 @@ export default function LoginPage() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <br />
 
-      <button onClick={handleLogin}>Log in</button>
+      <button onClick={handleLogin}>Continue</button>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <div className="error">{error}</div>}
 
       <p>
         No account? <a href="/signup">Sign up</a>
       </p>
-    </div>
+    </>
   );
 }
-
