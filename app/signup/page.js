@@ -11,9 +11,11 @@ export default function SignupPage() {
   const [error, setError] = useState(null);
 
   const handleSignup = async () => {
+    setError(null);
+
     const { error } = await supabase.auth.signUp({
       email,
-      password
+      password,
     });
 
     if (error) {
@@ -24,25 +26,30 @@ export default function SignupPage() {
   };
 
   return (
-    <div>
-      <h1>Sign Up</h1>
+    <>
+      <h1>Create account</h1>
+      <p>Decision intelligence for serious teams.</p>
 
       <input
         placeholder="Email"
         value={email}
-        onChange={e => setEmail(e.target.value)}
+        onChange={(e) => setEmail(e.target.value)}
       />
-      <br />
+
       <input
         type="password"
         placeholder="Password"
         value={password}
-        onChange={e => setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value)}
       />
-      <br />
+
       <button onClick={handleSignup}>Create account</button>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-    </div>
+      {error && <div className="error">{error}</div>}
+
+      <p>
+        Already have an account? <a href="/login">Log in</a>
+      </p>
+    </>
   );
 }
