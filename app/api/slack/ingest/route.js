@@ -2,49 +2,18 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * ─────────────────────────────────────────────
- * Environment variables (server-only)
- * ─────────────────────────────────────────────
+ * 🚫 CRITICAL FOR NEXT.JS BUILD
+ * This tells Next.js NOT to evaluate this route at build time
  */
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SLACK_TOKEN = process.env.SLACK_BOT_TOKEN;
+export const dynamic = "force-dynamic";
 
 /**
- * Fail FAST and EXPLICITLY during build
- * (prevents opaque "supabaseKey is required" errors)
- */
-if (!SUPABASE_URL) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-}
-
-if (!SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-}
-
-if (!SLACK_TOKEN) {
-  throw new Error("Missing SLACK_BOT_TOKEN");
-}
-
-/**
- * ─────────────────────────────────────────────
- * Supabase server client (SERVICE ROLE)
- * ─────────────────────────────────────────────
- */
-const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY
-);
-
-/**
- * ─────────────────────────────────────────────
  * Slack API helper
- * ─────────────────────────────────────────────
  */
-async function slackFetch(url) {
+async function slackFetch(url, token) {
   const res = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${SLACK_TOKEN}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -58,18 +27,33 @@ async function slackFetch(url) {
   return data;
 }
 
-/**
- * ─────────────────────────────────────────────
- * GET /api/slack/ingest
- * ─────────────────────────────────────────────
- */
 export async function GET() {
   try {
+    /**
+     * ✅ Read env vars ONLY at runtime
+     */
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const SLACK_TOKEN = process.env.SLACK_BOT_TOKEN;
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SLACK_TOKEN) {
+      throw new Error("Missing required server environment variables");
+    }
+
+    /**
+     * ✅ Create Supabase client INSIDE handler
+     */
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY
+    );
+
     /**
      * 1️⃣ Fetch public channels
      */
     const channelsData = await slackFetch(
-      "https://slack.com/api/conversations.list?types=public_channel"
+      "https://slack.com/api/conversations.list?types=public_channel",
+      SLACK_TOKEN
     );
 
     for (const channel of channelsData.channels || []) {
@@ -82,7 +66,8 @@ export async function GET() {
        * 2️⃣ Fetch messages for channel
        */
       const messagesData = await slackFetch(
-        `https://slack.com/api/conversations.history?channel=${channel.id}`
+        `https://slack.com/api/conversations.history?channel=${channel.id}`,
+        SLACK_TOKEN
       );
 
       for (const msg of messagesData.messages || []) {
@@ -92,7 +77,8 @@ export async function GET() {
          * 3️⃣ Fetch user info
          */
         const userData = await slackFetch(
-          `https://slack.com/api/users.info?user=${msg.user}`
+          `https://slack.com/api/users.info?user=${msg.user}`,
+          SLACK_TOKEN
         );
 
         const user = userData.user;
