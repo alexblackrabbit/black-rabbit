@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import DashboardLayout, { cardStyle } from "./DashboardLayout";
+
+/* =======================
+   DASHBOARD PAGE
+   ======================= */
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -13,171 +16,287 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
-
-      if (!data.user) {
-        router.push("/login");
-      } else {
-        setLoading(false);
-      }
+      if (!data.user) router.push("/login");
+      else setLoading(false);
     };
-
     checkUser();
   }, [router]);
 
   if (loading) {
-    return <p style={{ padding: 32 }}>Loading…</p>;
+    return <div style={styles.loading}>Loading command center…</div>;
   }
 
   return (
-    <DashboardLayout>
-      {/* BLOCK 1 — ACTIVITY SNAPSHOT */}
-      <section style={cardStyle}>
-        <h2 style={headingStyle}>Activity Snapshot</h2>
-
-        <div style={statsStyle}>
-          <div>
-            <strong style={statNumber}>124</strong>
-            <div style={statLabel}>Messages Today</div>
-          </div>
-
-          <div>
-            <strong style={statNumber}>7</strong>
-            <div style={statLabel}>Active Conversations</div>
-          </div>
-
-          <div>
-            <strong style={statNumber}>12</strong>
-            <div style={statLabel}>Participants</div>
-          </div>
+    <div style={styles.page}>
+      {/* HEADER */}
+      <header style={styles.header}>
+        <div>
+          <h1 style={styles.logo}>BLACK RABBIT</h1>
+          <span style={styles.subtitle}>Intelligence Dashboard</span>
         </div>
-      </section>
 
-      {/* BLOCK 2 — NEEDS ATTENTION */}
-      <section style={{ ...cardStyle, borderLeft: "4px solid #FFB020" }}>
-        <h2 style={headingStyle}>Needs Attention</h2>
+        <div style={styles.headerActions}>
+          <button style={styles.primaryButton}>Generate Brief</button>
+          <button
+            style={styles.secondaryButton}
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push("/login");
+            }}
+          >
+            Log out
+          </button>
+        </div>
+      </header>
 
-        <ul style={listStyle}>
-          <li>Pricing decision unresolved in #exec</li>
-          <li>Marketing assets blocking launch</li>
-          <li>Onboarding ownership unclear</li>
-        </ul>
-      </section>
+      {/* GRID */}
+      <main style={styles.grid}>
+        {/* DAILY SUMMARY (HERO) */}
+        <section style={{ ...styles.card, gridColumn: "span 8" }}>
+          <h2 style={styles.cardTitle}>Daily Intelligence Summary</h2>
+          <p style={styles.summaryText}>
+            Focus today centered on pricing strategy ($29 vs $39), launch
+            readiness, and marketing asset delays. Two unresolved decisions
+            remain in leadership channels. No critical operational risks
+            detected.
+          </p>
 
-      {/* BLOCK 3 — ACTION ITEMS */}
-      <section style={cardStyle}>
-        <h2 style={headingStyle}>Action Items</h2>
+          <div style={styles.tagRow}>
+            <span style={styles.tag}>Pricing</span>
+            <span style={styles.tag}>Launch</span>
+            <span style={styles.tag}>Marketing</span>
+          </div>
+        </section>
 
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>Owner</th>
-              <th>Source</th>
-              <th>Status</th>
-            </tr>
-          </thead>
+        {/* NEEDS ATTENTION */}
+        <section style={{ ...styles.card, gridColumn: "span 4" }}>
+          <h2 style={styles.cardTitle}>Needs Attention</h2>
+          <ul style={styles.alertList}>
+            <li>Unresolved pricing decision (#exec)</li>
+            <li>Launch blocked by missing assets</li>
+            <li>Ownership unclear on onboarding</li>
+          </ul>
+        </section>
 
-          <tbody>
-            <tr>
-              <td>Decide launch pricing</td>
-              <td>Alex</td>
-              <td>Slack</td>
-              <td>Open</td>
-            </tr>
+        {/* ACTIVITY SNAPSHOT */}
+        <section style={{ ...styles.card, gridColumn: "span 4" }}>
+          <h2 style={styles.cardTitle}>Activity</h2>
 
-            <tr>
-              <td>Deliver creative assets</td>
-              <td>Becca</td>
-              <td>Teams</td>
-              <td style={{ color: "#FF5A5F" }}>Overdue</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+          <div style={styles.metric}>
+            <span style={styles.metricValue}>124</span>
+            <span style={styles.metricLabel}>Messages Today</span>
+          </div>
 
-      {/* BLOCK 4 — SYSTEM HEALTH */}
-      <section style={{ ...cardStyle, opacity: 0.85 }}>
-        <h2 style={headingStyle}>System Health</h2>
-        <p>Last sync: 5 minutes ago</p>
-        <p>Status: Healthy</p>
-      </section>
+          <div style={styles.metric}>
+            <span style={styles.metricValue}>7</span>
+            <span style={styles.metricLabel}>Active Channels</span>
+          </div>
 
-      {/* BLOCK 5 — DAILY SUMMARY */}
-      <section style={cardStyle}>
-        <h2 style={headingStyle}>Daily Summary — Jan 12</h2>
+          <div style={styles.metric}>
+            <span style={styles.metricValue}>12</span>
+            <span style={styles.metricLabel}>Participants</span>
+          </div>
+        </section>
 
-        <p style={{ marginBottom: 16 }}>
-          Today focused on pricing strategy and marketing alignment ahead of
-          launch.
-        </p>
+        {/* ACTION ITEMS */}
+        <section style={{ ...styles.card, gridColumn: "span 8" }}>
+          <h2 style={styles.cardTitle}>Action Items</h2>
 
-        <h3 style={subheadingStyle}>Key Takeaways</h3>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Owner</th>
+                <th>Source</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Finalize launch pricing</td>
+                <td>Alex</td>
+                <td>Slack</td>
+                <td style={styles.statusOpen}>Open</td>
+              </tr>
+              <tr>
+                <td>Deliver creative assets</td>
+                <td>Becca</td>
+                <td>Teams</td>
+                <td style={styles.statusOverdue}>Overdue</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
 
-        <ul style={listStyle}>
-          <li>Pricing debate centered on $29 vs $39</li>
-          <li>Launch timeline blocked on assets</li>
-          <li>No critical risks detected</li>
-        </ul>
-      </section>
+        {/* SYSTEM HEALTH */}
+        <section style={{ ...styles.card, gridColumn: "span 4" }}>
+          <h2 style={styles.cardTitle}>System Health</h2>
 
-      {/* LOG OUT */}
-      <button
-        style={logoutButton}
-        onClick={async () => {
-          await supabase.auth.signOut();
-          router.push("/login");
-        }}
-      >
-        Log out
-      </button>
-    </DashboardLayout>
+          <div style={styles.healthRow}>
+            <span>Status</span>
+            <span style={styles.healthGood}>Healthy</span>
+          </div>
+
+          <div style={styles.healthRow}>
+            <span>Last Sync</span>
+            <span>5 min ago</span>
+          </div>
+
+          <div style={styles.healthRow}>
+            <span>Messages Ingested</span>
+            <span>124</span>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* =======================
+   STYLES (MISSION CONTROL)
+   ======================= */
 
-const headingStyle = {
-  marginBottom: 12,
-  color: "#4C6FFF",
-};
+const styles = {
+  page: {
+    background: "radial-gradient(circle at top, #0F1320, #05060A)",
+    color: "#EDEDED",
+    minHeight: "100vh",
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
 
-const subheadingStyle = {
-  marginTop: 16,
-  marginBottom: 8,
-  color: "#FFFFFF",
-};
+  loading: {
+    padding: 40,
+    fontSize: 18,
+    color: "#AAA",
+  },
 
-const statsStyle = {
-  display: "flex",
-  gap: "32px",
-};
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "28px 40px",
+    borderBottom: "1px solid #1B1F36",
+  },
 
-const statNumber = {
-  fontSize: "24px",
-  fontWeight: 600,
-};
+  logo: {
+    margin: 0,
+    fontSize: 20,
+    letterSpacing: "0.12em",
+  },
 
-const statLabel = {
-  fontSize: "13px",
-  color: "#A1A1A1",
-};
+  subtitle: {
+    fontSize: 12,
+    color: "#7C82FF",
+    letterSpacing: "0.15em",
+  },
 
-const listStyle = {
-  paddingLeft: 18,
-  lineHeight: 1.6,
-};
+  headerActions: {
+    display: "flex",
+    gap: 12,
+  },
 
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
-};
+  primaryButton: {
+    background: "linear-gradient(135deg, #4C6FFF, #7C82FF)",
+    border: "none",
+    color: "#FFF",
+    padding: "10px 18px",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: 600,
+  },
 
-const logoutButton = {
-  background: "#1E1E1E",
-  border: "1px solid #2A2A2A",
-  color: "#FFFFFF",
-  padding: "10px 16px",
-  borderRadius: "6px",
-  cursor: "pointer",
-  marginTop: 32,
+  secondaryButton: {
+    background: "#15172A",
+    border: "1px solid #262A4A",
+    color: "#FFF",
+    padding: "10px 16px",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
+
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(12, 1fr)",
+    gap: 24,
+    padding: 32,
+  },
+
+  card: {
+    background: "rgba(20, 24, 52, 0.85)",
+    border: "1px solid #1F2455",
+    borderRadius: 16,
+    padding: 24,
+    boxShadow: "0 0 0 1px rgba(124,130,255,0.05)",
+  },
+
+  cardTitle: {
+    marginBottom: 16,
+    fontSize: 14,
+    letterSpacing: "0.12em",
+    color: "#7C82FF",
+    textTransform: "uppercase",
+  },
+
+  summaryText: {
+    fontSize: 16,
+    lineHeight: 1.6,
+    marginBottom: 16,
+  },
+
+  tagRow: {
+    display: "flex",
+    gap: 10,
+  },
+
+  tag: {
+    fontSize: 11,
+    padding: "4px 10px",
+    borderRadius: 20,
+    background: "#1C2148",
+    color: "#AAB0FF",
+  },
+
+  alertList: {
+    paddingLeft: 18,
+    lineHeight: 1.7,
+  },
+
+  metric: {
+    marginBottom: 16,
+  },
+
+  metricValue: {
+    fontSize: 28,
+    fontWeight: 700,
+  },
+
+  metricLabel: {
+    fontSize: 12,
+    color: "#9AA0FF",
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: 14,
+  },
+
+  statusOpen: {
+    color: "#FFD166",
+  },
+
+  statusOverdue: {
+    color: "#FF5A5F",
+  },
+
+  healthRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+
+  healthGood: {
+    color: "#2ED47A",
+    fontWeight: 600,
+  },
 };
