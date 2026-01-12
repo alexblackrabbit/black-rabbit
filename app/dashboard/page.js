@@ -29,7 +29,7 @@ export default function MissionControl() {
       <nav style={styles.topNav}>
         {/* Left: Brand */}
         <div style={styles.navLeft}>
-          <div style={styles.logo}>BLACK RABBIT</div>
+          <div style={styles.logo}>COMPANY X</div>
         </div>
 
         {/* Right: Controls */}
