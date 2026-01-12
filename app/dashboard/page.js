@@ -177,15 +177,15 @@ export default function MissionControl() {
 const styles = {
   // 🌌 PAGE BACKGROUND - Pure Black
   page: {
-    backgroundColor: "#000000", // PURE BLACK
+    backgroundColor: "#000000",
     color: "#e2e8f0",
     minHeight: "100vh",
-    width: "100%", // Fixed: Changed from 100vw to 100% to stop scrollbar overlap
+    width: "100%",
     margin: 0,
     padding: 0,
     fontFamily: "'Inter', sans-serif",
-    boxSizing: "border-box", // Fixed: Ensures padding doesn't expand width
-    overflowX: "hidden", // Fixed: Prevents horizontal scroll
+    boxSizing: "border-box",
+    overflowX: "hidden",
   },
   loading: {
     height: "100vh",
@@ -205,12 +205,12 @@ const styles = {
     alignItems: "center",
     padding: "20px 40px",
     width: "100%",
-    borderBottom: "1px solid #1a1a1a", // Subtle dark grey border
-    background: "#000000", // Pure Black
+    borderBottom: "1px solid #1a1a1a",
+    background: "#000000",
     position: "sticky",
     top: 0,
     zIndex: 100,
-    boxSizing: "border-box", // Critical for layout
+    boxSizing: "border-box",
   },
   branding: { display: "flex", alignItems: "center", gap: "16px" },
   signalDot: { width: "8px", height: "8px", background: "#2ed47a", borderRadius: "50%", boxShadow: "0 0 10px #2ed47a" },
@@ -218,4 +218,124 @@ const styles = {
   badge: { 
     fontSize: "10px", 
     background: "#111", 
-    color: "#7c82ff",
+    color: "#7c82ff", 
+    border: "1px solid #333", 
+    padding: "4px 8px", 
+    borderRadius: "2px", 
+    letterSpacing: "0.1em", 
+    fontWeight: "600"
+  },
+  headerActions: { display: "flex", gap: "16px" },
+  actionBtn: {
+    background: "#fff",
+    border: "none",
+    color: "#000",
+    padding: "10px 20px",
+    borderRadius: "0px",
+    fontWeight: "700",
+    letterSpacing: "0.05em",
+    cursor: "pointer",
+    fontSize: "12px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  logoutBtn: {
+    background: "transparent",
+    border: "1px solid #333",
+    color: "#666",
+    padding: "10px 20px",
+    borderRadius: "0px",
+    fontWeight: "600",
+    fontSize: "12px",
+    cursor: "pointer",
+  },
+
+  // 📐 GRID - Edge to Edge
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(12, 1fr)",
+    gridAutoRows: "minmax(min-content, max-content)",
+    gap: "24px",
+    padding: "32px",
+    width: "100%",
+    maxWidth: "100%",
+    margin: "0",
+    boxSizing: "border-box",
+  },
+
+  // 🃏 PANELS - Pure Black Cards
+  panel: {
+    background: "#000000",
+    border: "1px solid #1a1a1a",
+    borderRadius: "0px",
+    padding: "24px",
+    display: "flex",
+    flexDirection: "column",
+  },
+  panelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+    borderBottom: "1px solid #1a1a1a",
+    paddingBottom: "12px",
+  },
+  panelTitle: {
+    margin: 0,
+    fontSize: "11px",
+    letterSpacing: "0.2em",
+    color: "#666",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  statusLive: {
+    fontSize: "10px",
+    color: "#2ed47a",
+    fontWeight: "bold",
+    letterSpacing: "0.1em",
+    animation: "pulse 2s infinite",
+  },
+
+  // 📝 CONTENT
+  heroContent: { display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" },
+  summaryText: { fontSize: "24px", lineHeight: "1.4", fontWeight: "400", color: "#fff" },
+  tags: { display: "flex", gap: "10px", marginTop: "20px" },
+  tag: { 
+    fontSize: "10px", 
+    padding: "4px 10px", 
+    border: "1px solid #333", 
+    color: "#fff", 
+    borderRadius: "0px", 
+    letterSpacing: "0.1em", 
+    fontWeight: "600",
+    textTransform: "uppercase" 
+  },
+  channelLink: { fontFamily: "monospace", color: "#7c82ff", background: "#111", padding: "2px 4px" },
+
+  // 📊 STATS
+  statRow: { display: "flex", justifyContent: "space-between", height: "100%", alignItems: "center" },
+  stat: { display: "flex", flexDirection: "column", alignItems: "center" },
+  statNum: { fontSize: "36px", fontWeight: "700", color: "#fff", lineHeight: "1" },
+  statLabel: { fontSize: "10px", color: "#444", letterSpacing: "0.1em", fontWeight: "600", marginTop: "4px" },
+
+  // ⚠️ LISTS
+  list: { listStyle: "none", padding: 0, margin: 0 },
+  listItem: { display: "flex", gap: "12px", padding: "12px 0", borderBottom: "1px solid #111" },
+  alertIcon: { fontSize: "16px" },
+  itemTitle: { fontSize: "13px", fontWeight: "600", color: "#fff" },
+  itemMeta: { fontSize: "11px", color: "#444", marginTop: "2px", fontFamily: "monospace" },
+
+  // 🏥 STATUS
+  statusRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", fontSize: "12px", color: "#666", letterSpacing: "0.05em" },
+  statusGood: { color: "#2ed47a", fontWeight: "700", border: "1px solid #0f361e", padding: "2px 6px", borderRadius: "0px", fontSize: "10px" },
+  mono: { fontFamily: "monospace", color: "#444" },
+
+  // 📋 TABLE
+  table: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
+  tr: { borderBottom: "1px solid #111" },
+  td: { padding: "16px 8px", color: "#ccc" },
+  avatar: { display: "inline-block", width: "20px", height: "20px", background: "#111", textAlign: "center", lineHeight: "20px", borderRadius: "50%", marginRight: "8px", fontSize: "9px", color: "#666" },
+  badgeOpen: { background: "#1a1600", color: "#FFD166", padding: "4px 8px", fontSize: "10px", fontWeight: "700", borderRadius: "0px", border: "1px solid #332b00" },
+  badgeCritical: { background: "#1a0505", color: "#FF5A5F", padding: "4px 8px", fontSize: "10px", fontWeight: "700", borderRadius: "0px", border: "1px solid #330a0a" },
+};
