@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+/**
+ * 🚫 CRITICAL
+ * Prevent Next.js from executing this route at build time
+ */
 export const dynamic = "force-dynamic";
 
-async function slackFetch(url, token, method = "GET") {
+/**
+ * Slack API helper (legacy-compatible)
+ */
+async function slackFetch(url, token) {
   const res = await fetch(url, {
-    method,
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
     },
   });
 
@@ -16,7 +21,7 @@ async function slackFetch(url, token, method = "GET") {
 
   if (!data.ok) {
     console.error("Slack API error:", data);
-    throw new Error(data.error);
+    throw new Error(data.error || "Slack API request failed");
   }
 
   return data;
@@ -24,60 +29,69 @@ async function slackFetch(url, token, method = "GET") {
 
 export async function GET() {
   try {
+    /**
+     * ✅ Read env vars at runtime ONLY
+     */
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const SLACK_TOKEN = process.env.SLACK_BOT_TOKEN;
+    const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SLACK_TOKEN) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SLACK_BOT_TOKEN) {
       throw new Error("Missing required server environment variables");
     }
 
+    /**
+     * ✅ Create Supabase client INSIDE handler
+     */
     const supabase = createClient(
       SUPABASE_URL,
       SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // 1️⃣ Fetch public channels
+    /**
+     * 1️⃣ Fetch public channels (LEGACY API — FIXES missing_scope)
+     */
     const channelsData = await slackFetch(
-      "https://slack.com/api/conversations.list?types=public_channel",
-      SLACK_TOKEN
+      "https://slack.com/api/channels.list",
+      SLACK_BOT_TOKEN
     );
 
     for (const channel of channelsData.channels || []) {
-      // 2️⃣ FORCE JOIN CHANNEL (CRITICAL)
-      await slackFetch(
-        `https://slack.com/api/conversations.join?channel=${channel.id}`,
-        SLACK_TOKEN,
-        "POST"
-      );
-
+      // Save channel
       await supabase.from("slack_channels").upsert({
         id: channel.id,
         name: channel.name,
       });
 
-      // 3️⃣ Fetch messages
+      /**
+       * 2️⃣ Fetch messages for channel
+       */
       const messagesData = await slackFetch(
         `https://slack.com/api/conversations.history?channel=${channel.id}`,
-        SLACK_TOKEN
+        SLACK_BOT_TOKEN
       );
 
       for (const msg of messagesData.messages || []) {
         if (!msg.user || !msg.text) continue;
 
+        /**
+         * 3️⃣ Fetch user info
+         */
         const userData = await slackFetch(
           `https://slack.com/api/users.info?user=${msg.user}`,
-          SLACK_TOKEN
+          SLACK_BOT_TOKEN
         );
 
         const user = userData.user;
 
+        // Save user
         await supabase.from("slack_users").upsert({
           id: user.id,
           name: user.name,
           real_name: user.real_name,
         });
 
+        // Save message
         await supabase.from("slack_messages").insert({
           channel_id: channel.id,
           user_id: user.id,
@@ -91,12 +105,14 @@ export async function GET() {
       status: "success",
       message: "Slack ingestion complete",
     });
-
   } catch (error) {
     console.error("Slack ingest failed:", error);
 
     return NextResponse.json(
-      { status: "error", message: error.message },
+      {
+        status: "error",
+        message: error.message,
+      },
       { status: 500 }
     );
   }
