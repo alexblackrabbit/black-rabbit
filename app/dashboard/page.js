@@ -235,3 +235,106 @@ const styles = {
     cursor: "pointer",
     fontSize: "12px",
     display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    boxShadow: "0 0 20px rgba(79, 91, 255, 0.3)",
+  },
+  logoutBtn: {
+    background: "transparent",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    color: "#94a3b8",
+    padding: "10px 20px",
+    borderRadius: "2px",
+    fontWeight: "600",
+    fontSize: "12px",
+    cursor: "pointer",
+  },
+
+  // 📐 GRID - UPDATED FOR FULL WIDTH
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(12, 1fr)",
+    gridAutoRows: "minmax(min-content, max-content)",
+    gap: "24px",
+    padding: "32px",
+    width: "100%",      // Force 100% width
+    maxWidth: "none",   // REMOVED the 1600px limit
+    margin: "0",        // REMOVED auto margin
+  },
+
+  // 🃏 PANELS
+  panel: {
+    background: "rgba(12, 14, 28, 0.7)",
+    border: "1px solid rgba(79, 91, 255, 0.15)",
+    borderRadius: "4px",
+    padding: "24px",
+    backdropFilter: "blur(5px)",
+    display: "flex",
+    flexDirection: "column",
+  },
+  panelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "20px",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+    paddingBottom: "12px",
+  },
+  panelTitle: {
+    margin: 0,
+    fontSize: "11px",
+    letterSpacing: "0.2em",
+    color: "#7c82ff",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  statusLive: {
+    fontSize: "10px",
+    color: "#2ed47a",
+    fontWeight: "bold",
+    letterSpacing: "0.1em",
+    animation: "pulse 2s infinite",
+  },
+
+  // 📝 CONTENT
+  heroContent: { display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" },
+  summaryText: { fontSize: "20px", lineHeight: "1.5", fontWeight: "300", color: "#fff" },
+  tags: { display: "flex", gap: "10px", marginTop: "20px" },
+  tag: { 
+    fontSize: "10px", 
+    padding: "4px 8px", 
+    border: "1px solid rgba(79, 91, 255, 0.4)", 
+    color: "#aeb3ff", 
+    borderRadius: "2px", 
+    letterSpacing: "0.1em", 
+    fontWeight: "600",
+    textTransform: "uppercase" 
+  },
+  channelLink: { fontFamily: "monospace", color: "#7c82ff", background: "rgba(79, 91, 255, 0.1)", padding: "2px 4px" },
+
+  // 📊 STATS
+  statRow: { display: "flex", justifyContent: "space-between", height: "100%", alignItems: "center" },
+  stat: { display: "flex", flexDirection: "column", alignItems: "center" },
+  statNum: { fontSize: "36px", fontWeight: "700", color: "#fff", lineHeight: "1" },
+  statLabel: { fontSize: "10px", color: "#64748b", letterSpacing: "0.1em", fontWeight: "600", marginTop: "4px" },
+
+  // ⚠️ LISTS
+  list: { listStyle: "none", padding: 0, margin: 0 },
+  listItem: { display: "flex", gap: "12px", padding: "12px 0", borderBottom: "1px solid rgba(255, 255, 255, 0.05)" },
+  alertIcon: { fontSize: "16px" },
+  itemTitle: { fontSize: "13px", fontWeight: "600", color: "#fff" },
+  itemMeta: { fontSize: "11px", color: "#64748b", marginTop: "2px", fontFamily: "monospace" },
+
+  // 🏥 STATUS
+  statusRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", fontSize: "12px", color: "#94a3b8", letterSpacing: "0.05em" },
+  statusGood: { color: "#2ed47a", fontWeight: "700", border: "1px solid rgba(46, 212, 122, 0.3)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px" },
+  mono: { fontFamily: "monospace", color: "#64748b" },
+
+  // 📋 TABLE
+  table: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
+  tr: { borderBottom: "1px solid rgba(255, 255, 255, 0.05)" },
+  td: { padding: "16px 8px", color: "#cbd5e1" },
+  avatar: { display: "inline-block", width: "20px", height: "20px", background: "#1e293b", textAlign: "center", lineHeight: "20px", borderRadius: "50%", marginRight: "8px", fontSize: "9px", color: "#94a3b8" },
+  badgeOpen: { background: "rgba(255, 209, 102, 0.1)", color: "#FFD166", padding: "4px 8px", fontSize: "10px", fontWeight: "700", borderRadius: "2px" },
+  badgeCritical: { background: "rgba(255, 90, 95, 0.15)", color: "#FF5A5F", padding: "4px 8px", fontSize: "10px", fontWeight: "700", borderRadius: "2px" },
+};
