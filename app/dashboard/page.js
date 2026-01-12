@@ -3,28 +3,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-
-/**
- * Simple dashboard layout wrapper
- */
-function DashboardLayout({ children }) {
-  return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <strong>Black Rabbit</strong>
-        <button style={styles.button}>Generate Now</button>
-      </header>
-
-      <main style={styles.main}>{children}</main>
-    </div>
-  );
-}
+import DashboardLayout, { cardStyle } from "./DashboardLayout";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
-  // 🔒 Auth protection (KEEP THIS)
+  // 🔒 Auth protection
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -46,28 +31,32 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       {/* BLOCK 1 — ACTIVITY SNAPSHOT */}
-      <section style={styles.card}>
-        <h2 style={styles.heading}>Activity Snapshot</h2>
-        <div style={styles.stats}>
+      <section style={cardStyle}>
+        <h2 style={headingStyle}>Activity Snapshot</h2>
+
+        <div style={statsStyle}>
           <div>
-            <strong>124</strong>
-            <span>Messages Today</span>
+            <strong style={statNumber}>124</strong>
+            <div style={statLabel}>Messages Today</div>
           </div>
+
           <div>
-            <strong>7</strong>
-            <span>Active Conversations</span>
+            <strong style={statNumber}>7</strong>
+            <div style={statLabel}>Active Conversations</div>
           </div>
+
           <div>
-            <strong>12</strong>
-            <span>Participants</span>
+            <strong style={statNumber}>12</strong>
+            <div style={statLabel}>Participants</div>
           </div>
         </div>
       </section>
 
       {/* BLOCK 2 — NEEDS ATTENTION */}
-      <section style={{ ...styles.card, borderLeft: "4px solid #FFB020" }}>
-        <h2 style={styles.heading}>Needs Attention</h2>
-        <ul>
+      <section style={{ ...cardStyle, borderLeft: "4px solid #FFB020" }}>
+        <h2 style={headingStyle}>Needs Attention</h2>
+
+        <ul style={listStyle}>
           <li>Pricing decision unresolved in #exec</li>
           <li>Marketing assets blocking launch</li>
           <li>Onboarding ownership unclear</li>
@@ -75,9 +64,10 @@ export default function DashboardPage() {
       </section>
 
       {/* BLOCK 3 — ACTION ITEMS */}
-      <section style={styles.card}>
-        <h2 style={styles.heading}>Action Items</h2>
-        <table style={styles.table}>
+      <section style={cardStyle}>
+        <h2 style={headingStyle}>Action Items</h2>
+
+        <table style={tableStyle}>
           <thead>
             <tr>
               <th>Task</th>
@@ -86,6 +76,7 @@ export default function DashboardPage() {
               <th>Status</th>
             </tr>
           </thead>
+
           <tbody>
             <tr>
               <td>Decide launch pricing</td>
@@ -93,6 +84,7 @@ export default function DashboardPage() {
               <td>Slack</td>
               <td>Open</td>
             </tr>
+
             <tr>
               <td>Deliver creative assets</td>
               <td>Becca</td>
@@ -104,31 +96,33 @@ export default function DashboardPage() {
       </section>
 
       {/* BLOCK 4 — SYSTEM HEALTH */}
-      <section style={{ ...styles.card, opacity: 0.85 }}>
-        <h2 style={styles.heading}>System Health</h2>
+      <section style={{ ...cardStyle, opacity: 0.85 }}>
+        <h2 style={headingStyle}>System Health</h2>
         <p>Last sync: 5 minutes ago</p>
         <p>Status: Healthy</p>
       </section>
 
       {/* BLOCK 5 — DAILY SUMMARY */}
-      <section style={styles.card}>
-        <h2 style={styles.heading}>Daily Summary — Jan 12</h2>
-        <p>
+      <section style={cardStyle}>
+        <h2 style={headingStyle}>Daily Summary — Jan 12</h2>
+
+        <p style={{ marginBottom: 16 }}>
           Today focused on pricing strategy and marketing alignment ahead of
           launch.
         </p>
 
-        <h3 style={{ marginTop: 16 }}>Key Takeaways</h3>
-        <ul>
+        <h3 style={subheadingStyle}>Key Takeaways</h3>
+
+        <ul style={listStyle}>
           <li>Pricing debate centered on $29 vs $39</li>
           <li>Launch timeline blocked on assets</li>
           <li>No critical risks detected</li>
         </ul>
       </section>
 
-      {/* LOG OUT (KEEP) */}
+      {/* LOG OUT */}
       <button
-        style={{ ...styles.button, marginTop: 32 }}
+        style={logoutButton}
         onClick={async () => {
           await supabase.auth.signOut();
           router.push("/login");
@@ -140,53 +134,50 @@ export default function DashboardPage() {
   );
 }
 
-/**
- * 🎨 Styles (dark, upscale)
- */
-const styles = {
-  page: {
-    background: "#0B0B0B",
-    color: "#FFFFFF",
-    minHeight: "100vh",
-    fontFamily: "Inter, system-ui, sans-serif",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "24px 32px",
-    borderBottom: "1px solid #1E1E1E",
-  },
-  main: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    padding: "32px",
-    display: "grid",
-    gap: "24px",
-  },
-  card: {
-    background: "#121212",
-    border: "1px solid #1E1E1E",
-    borderRadius: "12px",
-    padding: "24px",
-  },
-  heading: {
-    marginBottom: 12,
-    color: "#4C6FFF",
-  },
-  stats: {
-    display: "flex",
-    gap: "32px",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  button: {
-    background: "#4C6FFF",
-    border: "none",
-    color: "#FFF",
-    padding: "8px 16px",
-    borderRadius: "6px",
-    cursor: "pointer",
-  },
+/* ---------------- STYLES ---------------- */
+
+const headingStyle = {
+  marginBottom: 12,
+  color: "#4C6FFF",
+};
+
+const subheadingStyle = {
+  marginTop: 16,
+  marginBottom: 8,
+  color: "#FFFFFF",
+};
+
+const statsStyle = {
+  display: "flex",
+  gap: "32px",
+};
+
+const statNumber = {
+  fontSize: "24px",
+  fontWeight: 600,
+};
+
+const statLabel = {
+  fontSize: "13px",
+  color: "#A1A1A1",
+};
+
+const listStyle = {
+  paddingLeft: 18,
+  lineHeight: 1.6,
+};
+
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+};
+
+const logoutButton = {
+  background: "#1E1E1E",
+  border: "1px solid #2A2A2A",
+  color: "#FFFFFF",
+  padding: "10px 16px",
+  borderRadius: "6px",
+  cursor: "pointer",
+  marginTop: 32,
 };
