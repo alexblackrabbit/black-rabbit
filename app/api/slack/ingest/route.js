@@ -42,15 +42,12 @@ async function slackFetch(url, token, { method = "GET", body = null } = {}) {
 }
 
 /**
- * Cursor pagination for Slack endpoints that return response_metadata.next_cursor
- * itemKey is the array name in Slack response (channels/messages/etc).
+ * Cursor pagination helper
  */
 async function slackFetchAllPages(baseUrl, token, itemKey, { limit = 200 } = {}) {
   let all = [];
   let cursor = "";
 
-  // Slack history endpoints effectively cap at ~100–200; we keep it safe.
-  // For conversations.history, we will override to 100 below.
   while (true) {
     const url = new URL(baseUrl);
     url.searchParams.set("limit", String(limit));
@@ -70,6 +67,8 @@ async function slackFetchAllPages(baseUrl, token, itemKey, { limit = 200 } = {})
 export async function GET() {
   console.log("🚀 Slack cron fired", new Date().toISOString());
 
+  let run = null;
+
   try {
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -82,7 +81,25 @@ export async function GET() {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     /**
-     * In-memory user cache (prevents calling users.info repeatedly)
+     * 🔹 Create ingestion run record (START)
+     */
+    const { data: runRow, error: runError } = await supabase
+      .from("slack_ingestion_runs")
+      .insert({
+        started_at: new Date(),
+        status: "running",
+      })
+      .select()
+      .single();
+
+    if (runError) {
+      throw new Error("Failed to create ingestion run record");
+    }
+
+    run = runRow;
+
+    /**
+     * In-memory user cache
      */
     const userCache = new Map();
 
@@ -103,17 +120,12 @@ export async function GET() {
       };
 
       userCache.set(userId, record);
-
       await supabase.from("slack_users").upsert(record);
-
       return record;
     };
 
     /**
-     * 1) List ALL conversations we can see:
-     * - public channels (org-wide)
-     * - private channels (only those bot is invited to)
-     * - im/mpim (only those that include the bot)
+     * 1) List all conversations
      */
     const allConvos = await slackFetchAllPages(
       "https://slack.com/api/conversations.list?types=public_channel,private_channel,im,mpim&exclude_archived=true",
@@ -123,13 +135,11 @@ export async function GET() {
     );
 
     /**
-     * Pull existing last_ingested_ts so we can do incremental ingestion
+     * Pull last_ingested_ts
      */
-    const { data: existingChannels, error: existingErr } = await supabase
+    const { data: existingChannels } = await supabase
       .from("slack_channels")
       .select("id,last_ingested_ts");
-
-    if (existingErr) throw existingErr;
 
     const lastTsByChannel = new Map();
     for (const row of existingChannels || []) {
@@ -139,26 +149,24 @@ export async function GET() {
     let totalMessagesInserted = 0;
 
     for (const c of allConvos) {
-      // Determine type
       const type = c.is_im
         ? "im"
         : c.is_mpim
-          ? "mpim"
-          : c.is_private
-            ? "private"
-            : "public";
+        ? "mpim"
+        : c.is_private
+        ? "private"
+        : "public";
 
-      // Save channel metadata
       await supabase.from("slack_channels").upsert({
         id: c.id,
-        name: c.name || null, // do NOT invent names for DMs/private
+        name: c.name || null,
         type,
         is_private: !!c.is_private,
         updated_at: new Date().toISOString(),
       });
 
       /**
-       * 2) Auto-join PUBLIC channels only (org-wide)
+       * Auto-join PUBLIC channels
        */
       if (type === "public") {
         try {
@@ -168,45 +176,39 @@ export async function GET() {
             { method: "POST", body: { channel: c.id } }
           );
         } catch (e) {
-          // Safe ignores
           if (!String(e.message).includes("already_in_channel")) {
-            // If join fails for another reason, we continue but ingestion might be limited
-            console.warn(`Join failed for channel ${c.id}: ${e.message}`);
+            console.warn(`Join failed for ${c.id}: ${e.message}`);
           }
         }
       }
 
       /**
-       * 3) Incremental history fetch
-       * We only ingest messages newer than last_ingested_ts.
+       * Incremental history fetch
        */
       const lastTs = lastTsByChannel.get(c.id) || 0;
 
-      // conversations.history supports "oldest"
-      // We fetch pages with cursor; Slack caps per page ~100.
-      const baseHistoryUrl = new URL("https://slack.com/api/conversations.history");
-      baseHistoryUrl.searchParams.set("channel", c.id);
-      baseHistoryUrl.searchParams.set("oldest", String(lastTs));
-      baseHistoryUrl.searchParams.set("inclusive", "false");
+      const historyUrl = new URL(
+        "https://slack.com/api/conversations.history"
+      );
+      historyUrl.searchParams.set("channel", c.id);
+      historyUrl.searchParams.set("oldest", String(lastTs));
+      historyUrl.searchParams.set("inclusive", "false");
 
       const messages = await slackFetchAllPages(
-        baseHistoryUrl.toString(),
+        historyUrl.toString(),
         SLACK_BOT_TOKEN,
         "messages",
-        { limit: 100 } // history safe cap
+        { limit: 100 }
       );
 
       if (!messages.length) continue;
 
-      // Batch prepare inserts and track max ts
       let maxTs = lastTs;
       const rows = [];
 
       for (const m of messages) {
-        // Skip bot messages / system messages if no user
         if (!m.user || !m.text) continue;
 
-        // Ensure user exists (cached)
         await getAndUpsertUser(m.user);
 
         const tsNum = Number(m.ts);
@@ -221,25 +223,34 @@ export async function GET() {
       }
 
       if (rows.length) {
-        // Upsert using unique index on (channel_id, ts)
         const { error } = await supabase
           .from("slack_messages")
           .upsert(rows, { onConflict: "channel_id,ts" });
 
-        if (error) {
-          console.error("Message upsert error:", error);
-        } else {
+        if (!error) {
           totalMessagesInserted += rows.length;
         }
       }
 
-      // Update last ingested ts for channel
       await supabase.from("slack_channels").upsert({
         id: c.id,
         last_ingested_ts: maxTs,
         updated_at: new Date().toISOString(),
       });
     }
+
+    /**
+     * 🔹 Mark run SUCCESS
+     */
+    await supabase
+      .from("slack_ingestion_runs")
+      .update({
+        finished_at: new Date(),
+        status: "success",
+        channels_processed: allConvos.length,
+        messages_processed: totalMessagesInserted,
+      })
+      .eq("id", run.id);
 
     return NextResponse.json({
       status: "success",
@@ -249,6 +260,23 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Slack ingest failed:", error);
+
+    if (run?.id) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+
+      await supabase
+        .from("slack_ingestion_runs")
+        .update({
+          finished_at: new Date(),
+          status: "error",
+          error: error.message,
+        })
+        .eq("id", run.id);
+    }
+
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }
