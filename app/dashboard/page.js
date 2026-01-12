@@ -4,15 +4,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 
-/* =======================
-   DASHBOARD PAGE
-   ======================= */
-
-export default function DashboardPage() {
+export default function MissionControl() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
-  // 🔒 Auth protection
+  // 🔒 Auth Check
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -23,151 +19,149 @@ export default function DashboardPage() {
   }, [router]);
 
   if (loading) {
-    return <div style={styles.loading}>INITIALIZING COMMAND CENTER...</div>;
+    return <div style={styles.loading}>INITIALIZING UPLINK...</div>;
   }
 
   return (
     <div style={styles.page}>
-      {/* HEADER */}
+      {/* ──────────────── HEADER ──────────────── */}
       <header style={styles.header}>
         <div style={styles.branding}>
+          <div style={styles.signalDot}></div>
           <h1 style={styles.logo}>BLACK RABBIT</h1>
-          <div style={styles.badge}>CLASSIFIED // EYES ONLY</div>
+          <span style={styles.badge}>SECURE // LEVEL 5</span>
         </div>
 
         <div style={styles.headerActions}>
-          <button style={styles.primaryButton}>
-            <span style={styles.btnIcon}>⚡</span> GENERATE BRIEF
+          <button style={styles.actionBtn}>
+            <span style={styles.icon}>⚡</span> RUN ANALYSIS
           </button>
-          <button
-            style={styles.secondaryButton}
+          <button 
+            style={styles.logoutBtn}
             onClick={async () => {
               await supabase.auth.signOut();
               router.push("/login");
             }}
           >
-            LOG OUT
+            DISCONNECT
           </button>
         </div>
       </header>
 
-      {/* MISSION CONTROL GRID */}
+      {/* ──────────────── GRID LAYOUT ──────────────── */}
       <main style={styles.grid}>
         
-        {/* 1. DAILY INTELLIGENCE (Large Hero) */}
-        <section style={{ ...styles.card, ...styles.heroCard }}>
-          <div style={styles.cardHeader}>
-            <h2 style={styles.cardTitle}>DAILY INTELLIGENCE SUMMARY</h2>
-            <div style={styles.liveIndicator}>• LIVE</div>
+        {/* 1. HERO: EXECUTIVE SUMMARY (Spans 8 cols) */}
+        <section style={{ ...styles.panel, gridColumn: "span 8" }}>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>SITUATION REPORT</h2>
+            <div style={styles.statusLive}>LIVE FEED</div>
           </div>
-          <p style={styles.summaryText}>
-            <span style={styles.highlight}>CRITICAL UPDATE:</span> Pricing strategy ($29 vs $39) is the primary blocker for launch. Marketing assets are delayed by 48 hours. Two unresolved decisions remain in #exec channel requiring immediate leadership intervention.
-          </p>
-          <div style={styles.tagRow}>
-            <span style={styles.tag}>PRICING STRATEGY</span>
-            <span style={styles.tag}>LAUNCH READINESS</span>
-            <span style={styles.tag}>RISK: HIGH</span>
+          
+          <div style={styles.heroContent}>
+            <p style={styles.summaryText}>
+              <span style={{color: '#FF5A5F', fontWeight: 'bold'}}>BLOCKER DETECTED:</span> 
+              Pricing strategy debate ($29 vs $39) has stalled in <span style={styles.channelLink}>#exec</span> for 48 hours. 
+              Engineering requires immediate decision to meet Friday ship target.
+            </p>
+            
+            <div style={styles.tags}>
+              <span style={styles.tag}>PRICING</span>
+              <span style={styles.tag}>LAUNCH RISK</span>
+              <span style={styles.tag}>URGENT</span>
+            </div>
           </div>
         </section>
 
-        {/* 2. LIVE METRICS (Right Side Stats) */}
-        <section style={{ ...styles.card, ...styles.statsCard }}>
-          <h2 style={styles.cardTitle}>SIGNAL TRAFFIC</h2>
-          <div style={styles.statGrid}>
-            <div style={styles.statItem}>
-              <span style={styles.statValue}>124</span>
-              <span style={styles.statLabel}>MESSAGES</span>
+        {/* 2. STATS: SIGNAL INTELLIGENCE (Spans 4 cols) */}
+        <section style={{ ...styles.panel, gridColumn: "span 4" }}>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>SIGNAL INTELLIGENCE</h2>
+          </div>
+          <div style={styles.statRow}>
+            <div style={styles.stat}>
+              <span style={styles.statNum}>124</span>
+              <span style={styles.statLabel}>MSGS</span>
             </div>
-            <div style={styles.statItem}>
-              <span style={styles.statValue}>07</span>
+            <div style={styles.stat}>
+              <span style={styles.statNum}>07</span>
               <span style={styles.statLabel}>CHANNELS</span>
             </div>
-            <div style={styles.statItem}>
-              <span style={{...styles.statValue, color: '#FFD166'}}>12</span>
-              <span style={styles.statLabel}>PENDING</span>
+            <div style={styles.stat}>
+              <span style={{...styles.statNum, color: '#FFD166'}}>03</span>
+              <span style={styles.statLabel}>BLOCKED</span>
             </div>
           </div>
         </section>
 
-        {/* 3. NEEDS ATTENTION (Alerts) */}
-        <section style={{ ...styles.card, ...styles.alertCard }}>
-          <h2 style={styles.cardTitle}>PRIORITY ALERTS</h2>
-          <ul style={styles.alertList}>
-            <li style={styles.alertItem}>
+        {/* 3. ALERTS: CRITICAL RISKS (Spans 4 cols) */}
+        <section style={{ ...styles.panel, gridColumn: "span 4" }}>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>CRITICAL RISKS</h2>
+          </div>
+          <ul style={styles.list}>
+            <li style={styles.listItem}>
               <span style={styles.alertIcon}>⚠️</span>
-              <span style={styles.alertText}>Unresolved pricing decision (#exec)</span>
+              <div>
+                <div style={styles.itemTitle}>Pricing Undecided</div>
+                <div style={styles.itemMeta}>#exec • 2 days stale</div>
+              </div>
             </li>
-            <li style={styles.alertItem}>
+            <li style={styles.listItem}>
               <span style={styles.alertIcon}>🛑</span>
-              <span style={styles.alertText}>Launch blocked by missing assets</span>
-            </li>
-            <li style={styles.alertItem}>
-              <span style={styles.alertIcon}>❓</span>
-              <span style={styles.alertText}>Ownership unclear on onboarding flow</span>
+              <div>
+                <div style={styles.itemTitle}>Assets Missing</div>
+                <div style={styles.itemMeta}>#marketing • blocking launch</div>
+              </div>
             </li>
           </ul>
         </section>
 
-        {/* 4. SYSTEM HEALTH */}
-        <section style={{ ...styles.card, ...styles.healthCard }}>
-          <h2 style={styles.cardTitle}>SYSTEM STATUS</h2>
-          <div style={styles.healthContainer}>
-            <div style={styles.healthRow}>
-              <span>INGESTION NODE</span>
-              <span style={styles.statusGood}>OPERATIONAL</span>
-            </div>
-            <div style={styles.healthRow}>
-              <span>AI REASONING</span>
-              <span style={styles.statusGood}>ONLINE</span>
-            </div>
-            <div style={styles.healthRow}>
-              <span>LAST SYNC</span>
-              <span style={styles.monoText}>T-MINUS 5 MIN</span>
-            </div>
+        {/* 4. SYSTEM STATUS (Spans 4 cols) */}
+        <section style={{ ...styles.panel, gridColumn: "span 4" }}>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>SYSTEM STATUS</h2>
+          </div>
+          <div style={styles.statusRow}>
+            <span>INGESTION</span>
+            <span style={styles.statusGood}>OPTIMAL</span>
+          </div>
+          <div style={styles.statusRow}>
+            <span>NEURAL ENGINE</span>
+            <span style={styles.statusGood}>ONLINE</span>
+          </div>
+          <div style={styles.statusRow}>
+            <span>LAST SYNC</span>
+            <span style={styles.mono}>T-MINUS 2m</span>
           </div>
         </section>
 
-        {/* 5. ACTION ITEMS (Full Width) */}
-        <section style={{ ...styles.card, ...styles.fullWidthCard }}>
-          <div style={styles.cardHeader}>
-            <h2 style={styles.cardTitle}>ACTION DIRECTIVES</h2>
-            <div style={styles.tabGroup}>
-              <span style={styles.activeTab}>ALL</span>
-              <span style={styles.inactiveTab}>ASSIGNED TO ME</span>
-            </div>
+        {/* 5. ACTION DIRECTIVES (Spans 12 cols / Full Width) */}
+        <section style={{ ...styles.panel, gridColumn: "span 12" }}>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>ACTION DIRECTIVES</h2>
           </div>
-          
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={{width: '40%'}}>DIRECTIVE</th>
-                <th>OWNER</th>
-                <th>SOURCE CHANNEL</th>
-                <th>PRIORITY</th>
-                <th>STATUS</th>
+                <th style={{textAlign: 'left'}}>DIRECTIVE</th>
+                <th style={{textAlign: 'left'}}>OWNER</th>
+                <th style={{textAlign: 'left'}}>SOURCE</th>
+                <th style={{textAlign: 'left'}}>STATUS</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td style={styles.taskCell}>Finalize launch pricing model</td>
-                <td><span style={styles.avatar}>AM</span> Alex M.</td>
-                <td style={styles.monoText}>#exec-strategy</td>
-                <td style={{color: '#FF5A5F'}}>CRITICAL</td>
-                <td><span style={styles.statusBadgeOpen}>OPEN</span></td>
+              <tr style={styles.tr}>
+                <td style={styles.td}>Finalize launch pricing model ($29 vs $39)</td>
+                <td style={styles.td}><span style={styles.avatar}>AM</span> Alex M.</td>
+                <td style={{...styles.td, ...styles.mono}}>#exec</td>
+                <td style={styles.td}><span style={styles.badgeOpen}>OPEN</span></td>
               </tr>
-              <tr>
-                <td style={styles.taskCell}>Deliver creative assets for landing page</td>
-                <td><span style={styles.avatar}>BK</span> Becca K.</td>
-                <td style={styles.monoText}>#marketing</td>
-                <td style={{color: '#FFD166'}}>HIGH</td>
-                <td><span style={styles.statusBadgeOverdue}>OVERDUE</span></td>
-              </tr>
-              <tr>
-                <td style={styles.taskCell}>Review Q3 burn rate report</td>
-                <td><span style={styles.avatar}>SG</span> Sarah G.</td>
-                <td style={styles.monoText}>#finance</td>
-                <td style={{color: '#2ED47A'}}>NORMAL</td>
-                <td><span style={styles.statusBadgeOpen}>IN PROGRESS</span></td>
+              <tr style={styles.tr}>
+                <td style={styles.td}>Approve final landing page copy</td>
+                <td style={styles.td}><span style={styles.avatar}>BK</span> Becca K.</td>
+                <td style={{...styles.td, ...styles.mono}}>#marketing</td>
+                <td style={styles.td}><span style={styles.badgeCritical}>OVERDUE</span></td>
               </tr>
             </tbody>
           </table>
@@ -178,27 +172,25 @@ export default function DashboardPage() {
   );
 }
 
-/* =======================
-   STYLES (THE "CIA" THEME)
-   ======================= */
+/* ──────────────── STYLES ──────────────── */
 
 const styles = {
-  // 🌌 GLOBAL PAGE
+  // 🌌 PAGE
   page: {
-    background: "radial-gradient(circle at 50% 0%, #161b2e, #05060a 80%)", // Deep void blue-black
+    backgroundColor: "#05060a",
+    backgroundImage: "radial-gradient(circle at 50% 0%, #111425, #05060a 60%)",
     color: "#e2e8f0",
     minHeight: "100vh",
-    fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    fontFamily: "'Inter', sans-serif",
     overflowX: "hidden",
   },
-
   loading: {
     height: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#05060a",
-    color: "#7c82ff",
+    background: "#000",
+    color: "#4f5bff",
     fontFamily: "monospace",
     letterSpacing: "0.2em",
   },
@@ -208,278 +200,138 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "24px 40px",
-    borderBottom: "1px solid rgba(124, 130, 255, 0.1)",
+    padding: "20px 40px",
+    borderBottom: "1px solid rgba(79, 91, 255, 0.15)",
     background: "rgba(5, 6, 10, 0.8)",
-    backdropFilter: "blur(10px)",
+    backdropFilter: "blur(12px)",
     position: "sticky",
     top: 0,
     zIndex: 100,
   },
-
-  branding: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-  },
-
-  logo: {
-    margin: 0,
-    fontSize: "22px",
-    fontWeight: "800",
-    letterSpacing: "0.15em",
-    background: "linear-gradient(90deg, #fff, #94a3b8)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-  },
-
-  badge: {
-    fontSize: "10px",
-    background: "rgba(255, 90, 95, 0.15)",
-    color: "#FF5A5F",
-    border: "1px solid rgba(255, 90, 95, 0.3)",
-    padding: "4px 8px",
-    borderRadius: "4px",
+  branding: { display: "flex", alignItems: "center", gap: "16px" },
+  signalDot: { width: "8px", height: "8px", background: "#2ed47a", borderRadius: "50%", boxShadow: "0 0 10px #2ed47a" },
+  logo: { margin: 0, fontSize: "20px", fontWeight: "800", letterSpacing: "0.15em", color: "#fff" },
+  badge: { 
+    fontSize: "10px", 
+    background: "rgba(79, 91, 255, 0.1)", 
+    color: "#7c82ff", 
+    border: "1px solid rgba(79, 91, 255, 0.3)", 
+    padding: "4px 8px", 
+    borderRadius: "2px", 
     letterSpacing: "0.1em",
-    fontWeight: "600",
+    fontWeight: "600"
   },
-
-  headerActions: {
-    display: "flex",
-    gap: "16px",
-  },
-
-  primaryButton: {
-    background: "#7C82FF",
+  headerActions: { display: "flex", gap: "16px" },
+  actionBtn: {
+    background: "#4f5bff",
     border: "none",
-    color: "#05060a",
-    padding: "10px 24px",
-    borderRadius: "2px", // Sharp edges
-    cursor: "pointer",
+    color: "#fff",
+    padding: "10px 20px",
+    borderRadius: "2px",
     fontWeight: "700",
     letterSpacing: "0.05em",
+    cursor: "pointer",
     fontSize: "12px",
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    boxShadow: "0 0 15px rgba(124, 130, 255, 0.4)",
+    boxShadow: "0 0 20px rgba(79, 91, 255, 0.3)",
   },
-
-  secondaryButton: {
+  logoutBtn: {
     background: "transparent",
     border: "1px solid rgba(255, 255, 255, 0.2)",
     color: "#94a3b8",
-    padding: "10px 24px",
+    padding: "10px 20px",
     borderRadius: "2px",
-    cursor: "pointer",
     fontWeight: "600",
     fontSize: "12px",
-    letterSpacing: "0.05em",
+    cursor: "pointer",
   },
 
-  // 📐 GRID LAYOUT (The "Mission Control" feel)
+  // 📐 GRID
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(12, 1fr)",
     gridAutoRows: "minmax(min-content, max-content)",
     gap: "24px",
-    padding: "40px",
-    maxWidth: "1800px",
+    padding: "32px 40px",
+    maxWidth: "1600px",
     margin: "0 auto",
   },
 
-  // 🃏 CARDS (Glass panels)
-  card: {
-    background: "rgba(13, 15, 28, 0.6)",
-    border: "1px solid rgba(124, 130, 255, 0.15)",
-    borderRadius: "6px",
-    padding: "32px",
+  // 🃏 PANELS
+  panel: {
+    background: "rgba(12, 14, 28, 0.7)",
+    border: "1px solid rgba(79, 91, 255, 0.15)",
+    borderRadius: "4px",
+    padding: "24px",
     backdropFilter: "blur(5px)",
-    position: "relative",
     display: "flex",
     flexDirection: "column",
   },
-
-  // Specific Card Spans (Responsive logic implied for grid)
-  heroCard: { gridColumn: "span 8" }, // Takes up left 2/3
-  statsCard: { gridColumn: "span 4" }, // Takes up right 1/3
-  alertCard: { gridColumn: "span 4" },
-  healthCard: { gridColumn: "span 4" }, // Middle/Right
-  fullWidthCard: { gridColumn: "span 12" }, // Bottom full width
-
-  cardHeader: {
+  panelHeader: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: "20px",
+    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+    paddingBottom: "12px",
   },
-
-  cardTitle: {
+  panelTitle: {
     margin: 0,
     fontSize: "11px",
     letterSpacing: "0.2em",
-    color: "#7C82FF",
+    color: "#7c82ff",
     fontWeight: "700",
     textTransform: "uppercase",
-    marginBottom: "24px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
   },
-
-  liveIndicator: {
+  statusLive: {
     fontSize: "10px",
-    color: "#2ED47A",
+    color: "#2ed47a",
     fontWeight: "bold",
     letterSpacing: "0.1em",
     animation: "pulse 2s infinite",
   },
 
-  // 📝 CONTENT STYLES
-  summaryText: {
-    fontSize: "24px", // Big bold text
-    lineHeight: "1.4",
-    fontWeight: "300",
-    color: "#fff",
-    marginBottom: "32px",
-  },
-
-  highlight: {
-    color: "#FF5A5F",
+  // 📝 CONTENT
+  heroContent: { display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" },
+  summaryText: { fontSize: "20px", lineHeight: "1.5", fontWeight: "300", color: "#fff" },
+  tags: { display: "flex", gap: "10px", marginTop: "20px" },
+  tag: { 
+    fontSize: "10px", 
+    padding: "4px 8px", 
+    border: "1px solid rgba(79, 91, 255, 0.4)", 
+    color: "#aeb3ff", 
+    borderRadius: "2px", 
+    letterSpacing: "0.1em", 
     fontWeight: "600",
+    textTransform: "uppercase" 
   },
-
-  tagRow: {
-    display: "flex",
-    gap: "12px",
-    marginTop: "auto",
-  },
-
-  tag: {
-    fontSize: "10px",
-    padding: "6px 12px",
-    border: "1px solid rgba(124, 130, 255, 0.3)",
-    background: "rgba(124, 130, 255, 0.05)",
-    color: "#aeb3ff",
-    borderRadius: "2px",
-    letterSpacing: "0.1em",
-    fontWeight: "600",
-  },
+  channelLink: { fontFamily: "monospace", color: "#7c82ff", background: "rgba(79, 91, 255, 0.1)", padding: "2px 4px" },
 
   // 📊 STATS
-  statGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "16px",
-  },
-  statItem: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  statValue: {
-    fontSize: "42px",
-    fontWeight: "700",
-    color: "#fff",
-    lineHeight: "1",
-    marginBottom: "8px",
-  },
-  statLabel: {
-    fontSize: "10px",
-    color: "#64748b",
-    letterSpacing: "0.1em",
-    fontWeight: "600",
-  },
+  statRow: { display: "flex", justifyContent: "space-between", height: "100%", alignItems: "center" },
+  stat: { display: "flex", flexDirection: "column", alignItems: "center" },
+  statNum: { fontSize: "36px", fontWeight: "700", color: "#fff", lineHeight: "1" },
+  statLabel: { fontSize: "10px", color: "#64748b", letterSpacing: "0.1em", fontWeight: "600", marginTop: "4px" },
 
-  // ⚠️ ALERTS
-  alertList: {
-    listStyle: "none",
-    padding: 0,
-    margin: 0,
-  },
-  alertItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "16px 0",
-    borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
-  },
+  // ⚠️ LISTS
+  list: { listStyle: "none", padding: 0, margin: 0 },
+  listItem: { display: "flex", gap: "12px", padding: "12px 0", borderBottom: "1px solid rgba(255, 255, 255, 0.05)" },
   alertIcon: { fontSize: "16px" },
-  alertText: { fontSize: "14px", fontWeight: "500" },
+  itemTitle: { fontSize: "13px", fontWeight: "600", color: "#fff" },
+  itemMeta: { fontSize: "11px", color: "#64748b", marginTop: "2px", fontFamily: "monospace" },
 
-  // 🏥 HEALTH
-  healthContainer: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px",
-  },
-  healthRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    fontSize: "13px",
-  },
-  statusGood: {
-    color: "#2ED47A",
-    fontWeight: "600",
-    letterSpacing: "0.05em",
-    fontSize: "11px",
-    border: "1px solid rgba(46, 212, 122, 0.3)",
-    padding: "2px 6px",
-    borderRadius: "2px",
-  },
-  monoText: {
-    fontFamily: "monospace",
-    color: "#64748b",
-  },
+  // 🏥 STATUS
+  statusRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", fontSize: "12px", color: "#94a3b8", letterSpacing: "0.05em" },
+  statusGood: { color: "#2ed47a", fontWeight: "700", border: "1px solid rgba(46, 212, 122, 0.3)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px" },
+  mono: { fontFamily: "monospace", color: "#64748b" },
 
   // 📋 TABLE
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "14px",
-  },
-  tabGroup: {
-    display: "flex",
-    gap: "24px",
-    fontSize: "12px",
-    fontWeight: "600",
-    letterSpacing: "0.05em",
-  },
-  activeTab: { color: "#fff", borderBottom: "2px solid #7C82FF", paddingBottom: "4px" },
-  inactiveTab: { color: "#475569", cursor: "pointer" },
-
-  taskCell: {
-    padding: "20px 0",
-    color: "#fff",
-    fontWeight: "500",
-    borderBottom: "1px solid rgba(255,255,255,0.05)",
-  },
-  avatar: {
-    display: "inline-block",
-    width: "24px",
-    height: "24px",
-    background: "#1e293b",
-    color: "#94a3b8",
-    fontSize: "10px",
-    textAlign: "center",
-    lineHeight: "24px",
-    borderRadius: "50%",
-    marginRight: "8px",
-  },
-  statusBadgeOpen: {
-    background: "rgba(255, 209, 102, 0.1)",
-    color: "#FFD166",
-    padding: "4px 8px",
-    fontSize: "10px",
-    fontWeight: "700",
-    borderRadius: "2px",
-  },
-  statusBadgeOverdue: {
-    background: "rgba(255, 90, 95, 0.1)",
-    color: "#FF5A5F",
-    padding: "4px 8px",
-    fontSize: "10px",
-    fontWeight: "700",
-    borderRadius: "2px",
-  },
+  table: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
+  tr: { borderBottom: "1px solid rgba(255, 255, 255, 0.05)" },
+  td: { padding: "16px 8px", color: "#cbd5e1" },
+  avatar: { display: "inline-block", width: "20px", height: "20px", background: "#1e293b", textAlign: "center", lineHeight: "20px", borderRadius: "50%", marginRight: "8px", fontSize: "9px", color: "#94a3b8" },
+  badgeOpen: { background: "rgba(255, 209, 102, 0.1)", color: "#FFD166", padding: "4px 8px", fontSize: "10px", fontWeight: "700", borderRadius: "2px" },
+  badgeCritical: { background: "rgba(255, 90, 95, 0.15)", color: "#FF5A5F", padding: "4px 8px", fontSize: "10px", fontWeight: "700", borderRadius: "2px" },
 };
