@@ -237,7 +237,7 @@ export default function MissionControl() {
 const styles = {
   // 🌌 PAGE STRUCTURE
   page: {
-    backgroundColor: "#0B0B0B", // The requested Premium Off-Black
+    backgroundColor: "#0B0B0B", // Premium Off-Black
     color: "#E5E7EB",
     minHeight: "100vh",
     width: "100%",
@@ -310,9 +310,12 @@ const styles = {
   tr: { borderBottom: "1px solid #1F1F1F" },
   td: { padding: "12px 0", color: "#CCC" },
   textBtn: { background: "none", border: "none", color: "#666", fontSize: "11px", cursor: "pointer" },
+  
+  // 🔘 STATUS PILLS
   statusOpen: { background: "rgba(255,255,255,0.1)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px", fontWeight: "600", color: "#FFF" },
   statusOverdue: { background: "rgba(255, 90, 95, 0.2)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px", fontWeight: "600", color: "#FF5A5F" },
-  statusDone: { color: "#444", fontSize: "10px", fontWeight: "600", textDecoration: "line-through" },
+  // UPDATED: Green Lit style for DONE
+  statusDone: { background: "rgba(46, 212, 122, 0.2)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px", fontWeight: "600", color: "#2ED47A" },
 
   // 📝 BLOCK 5: SUMMARY
   summaryContent: { display: "flex", flexDirection: "column", gap: "32px", marginTop: "16px" },
