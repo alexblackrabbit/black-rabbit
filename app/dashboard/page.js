@@ -8,6 +8,7 @@ export default function MissionControl() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
+  // 🔒 Auth Check
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -18,22 +19,24 @@ export default function MissionControl() {
   }, [router]);
 
   if (loading) {
-    return <div style={styles.loading}>INITIALIZING UPLINK…</div>;
+    return <div style={styles.loading}>INITIALIZING UPLINK...</div>;
   }
 
   return (
     <div style={styles.page}>
-      {/* HEADER */}
+      {/* ──────────────── HEADER ──────────────── */}
       <header style={styles.header}>
         <div style={styles.branding}>
-          <div style={styles.signalDot} />
+          <div style={styles.signalDot}></div>
           <h1 style={styles.logo}>BLACK RABBIT</h1>
-          <span style={styles.badge}>SECURE · LEVEL 5</span>
+          <span style={styles.badge}>SECURE // LEVEL 5</span>
         </div>
 
         <div style={styles.headerActions}>
-          <button style={styles.actionBtn}>⚡ RUN ANALYSIS</button>
-          <button
+          <button style={styles.actionBtn}>
+            <span style={styles.icon}>⚡</span> RUN ANALYSIS
+          </button>
+          <button 
             style={styles.logoutBtn}
             onClick={async () => {
               await supabase.auth.signOut();
@@ -45,127 +48,174 @@ export default function MissionControl() {
         </div>
       </header>
 
-      {/* GRID */}
+      {/* ──────────────── GRID LAYOUT ──────────────── */}
       <main style={styles.grid}>
-        {/* SITUATION REPORT */}
+        
+        {/* 1. HERO: EXECUTIVE SUMMARY (Spans 8 cols) */}
         <section style={{ ...styles.panel, gridColumn: "span 8" }}>
-          <h2 style={styles.panelTitle}>SITUATION REPORT</h2>
-          <p style={styles.summaryText}>
-            <span style={styles.alertRed}>BLOCKER:</span> Pricing decision
-            ($29 vs $39) unresolved in <span style={styles.mono}>#exec</span>.
-            Engineering blocked pending approval.
-          </p>
-          <div style={styles.tags}>
-            <span style={styles.tag}>PRICING</span>
-            <span style={styles.tag}>LAUNCH RISK</span>
-            <span style={styles.tag}>URGENT</span>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>SITUATION REPORT</h2>
+            <div style={styles.statusLive}>LIVE FEED</div>
+          </div>
+          
+          <div style={styles.heroContent}>
+            <p style={styles.summaryText}>
+              <span style={{color: '#FF5A5F', fontWeight: 'bold'}}>BLOCKER DETECTED:</span> 
+              Pricing strategy debate ($29 vs $39) has stalled in <span style={styles.channelLink}>#exec</span> for 48 hours. 
+              Engineering requires immediate decision to meet Friday ship target.
+            </p>
+            
+            <div style={styles.tags}>
+              <span style={styles.tag}>PRICING</span>
+              <span style={styles.tag}>LAUNCH RISK</span>
+              <span style={styles.tag}>URGENT</span>
+            </div>
           </div>
         </section>
 
-        {/* SIGNAL INTEL */}
+        {/* 2. STATS: SIGNAL INTELLIGENCE (Spans 4 cols) */}
         <section style={{ ...styles.panel, gridColumn: "span 4" }}>
-          <h2 style={styles.panelTitle}>SIGNAL INTEL</h2>
-          <div style={styles.statGrid}>
-            <div><strong>124</strong><span>MSGS</span></div>
-            <div><strong>7</strong><span>CHANNELS</span></div>
-            <div><strong style={{ color: "#FFD166" }}>3</strong><span>BLOCKED</span></div>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>SIGNAL INTELLIGENCE</h2>
+          </div>
+          <div style={styles.statRow}>
+            <div style={styles.stat}>
+              <span style={styles.statNum}>124</span>
+              <span style={styles.statLabel}>MSGS</span>
+            </div>
+            <div style={styles.stat}>
+              <span style={styles.statNum}>07</span>
+              <span style={styles.statLabel}>CHANNELS</span>
+            </div>
+            <div style={styles.stat}>
+              <span style={{...styles.statNum, color: '#FFD166'}}>03</span>
+              <span style={styles.statLabel}>BLOCKED</span>
+            </div>
           </div>
         </section>
 
-        {/* CRITICAL RISKS */}
+        {/* 3. ALERTS: CRITICAL RISKS (Spans 4 cols) */}
         <section style={{ ...styles.panel, gridColumn: "span 4" }}>
-          <h2 style={styles.panelTitle}>CRITICAL RISKS</h2>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>CRITICAL RISKS</h2>
+          </div>
           <ul style={styles.list}>
-            <li>Pricing unresolved · 48h stale</li>
-            <li>Assets missing · launch blocked</li>
+            <li style={styles.listItem}>
+              <span style={styles.alertIcon}>⚠️</span>
+              <div>
+                <div style={styles.itemTitle}>Pricing Undecided</div>
+                <div style={styles.itemMeta}>#exec • 2 days stale</div>
+              </div>
+            </li>
+            <li style={styles.listItem}>
+              <span style={styles.alertIcon}>🛑</span>
+              <div>
+                <div style={styles.itemTitle}>Assets Missing</div>
+                <div style={styles.itemMeta}>#marketing • blocking launch</div>
+              </div>
+            </li>
           </ul>
         </section>
 
-        {/* SYSTEM STATUS */}
+        {/* 4. SYSTEM STATUS (Spans 4 cols) */}
         <section style={{ ...styles.panel, gridColumn: "span 4" }}>
-          <h2 style={styles.panelTitle}>SYSTEM STATUS</h2>
-          <div style={styles.statusRow}><span>INGESTION</span><span style={styles.good}>OK</span></div>
-          <div style={styles.statusRow}><span>AI ENGINE</span><span style={styles.good}>ONLINE</span></div>
-          <div style={styles.statusRow}><span>LAST SYNC</span><span style={styles.mono}>2m ago</span></div>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>SYSTEM STATUS</h2>
+          </div>
+          <div style={styles.statusRow}>
+            <span>INGESTION</span>
+            <span style={styles.statusGood}>OPTIMAL</span>
+          </div>
+          <div style={styles.statusRow}>
+            <span>NEURAL ENGINE</span>
+            <span style={styles.statusGood}>ONLINE</span>
+          </div>
+          <div style={styles.statusRow}>
+            <span>LAST SYNC</span>
+            <span style={styles.mono}>T-MINUS 2m</span>
+          </div>
         </section>
 
-        {/* ACTION DIRECTIVES */}
+        {/* 5. ACTION DIRECTIVES (Spans 12 cols / Full Width) */}
         <section style={{ ...styles.panel, gridColumn: "span 12" }}>
-          <h2 style={styles.panelTitle}>ACTION DIRECTIVES</h2>
+          <div style={styles.panelHeader}>
+            <h2 style={styles.panelTitle}>ACTION DIRECTIVES</h2>
+          </div>
           <table style={styles.table}>
             <thead>
               <tr>
-                <th>DIRECTIVE</th><th>OWNER</th><th>SOURCE</th><th>STATUS</th>
+                <th style={{textAlign: 'left'}}>DIRECTIVE</th>
+                <th style={{textAlign: 'left'}}>OWNER</th>
+                <th style={{textAlign: 'left'}}>SOURCE</th>
+                <th style={{textAlign: 'left'}}>STATUS</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Finalize pricing</td>
-                <td>Alex</td>
-                <td>#exec</td>
-                <td><span style={styles.badgeOpen}>OPEN</span></td>
+              <tr style={styles.tr}>
+                <td style={styles.td}>Finalize launch pricing model ($29 vs $39)</td>
+                <td style={styles.td}><span style={styles.avatar}>AM</span> Alex M.</td>
+                <td style={{...styles.td, ...styles.mono}}>#exec</td>
+                <td style={styles.td}><span style={styles.badgeOpen}>OPEN</span></td>
               </tr>
-              <tr>
-                <td>Approve landing copy</td>
-                <td>Becca</td>
-                <td>#marketing</td>
-                <td><span style={styles.badgeCritical}>OVERDUE</span></td>
+              <tr style={styles.tr}>
+                <td style={styles.td}>Approve final landing page copy</td>
+                <td style={styles.td}><span style={styles.avatar}>BK</span> Becca K.</td>
+                <td style={{...styles.td, ...styles.mono}}>#marketing</td>
+                <td style={styles.td}><span style={styles.badgeCritical}>OVERDUE</span></td>
               </tr>
             </tbody>
           </table>
         </section>
+
       </main>
     </div>
   );
 }
 
-/* STYLES */
+/* ──────────────── STYLES ──────────────── */
+
 const styles = {
+  // 🌌 PAGE BACKGROUND - Pure Black
   page: {
-    background: "radial-gradient(circle at top, #111425, #05060a 60%)",
+    backgroundColor: "#000000", // PURE BLACK
+    color: "#e2e8f0",
     minHeight: "100vh",
-    color: "#E5E7EB",
-    fontFamily: "Inter, system-ui, sans-serif",
+    width: "100%", // Fixed: Changed from 100vw to 100% to stop scrollbar overlap
+    margin: 0,
+    padding: 0,
+    fontFamily: "'Inter', sans-serif",
+    boxSizing: "border-box", // Fixed: Ensures padding doesn't expand width
+    overflowX: "hidden", // Fixed: Prevents horizontal scroll
   },
   loading: {
     height: "100vh",
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
+    background: "#000",
     color: "#4f5bff",
     fontFamily: "monospace",
     letterSpacing: "0.2em",
   },
+
+  // 🛰️ HEADER - Pure Black with subtle border
   header: {
     display: "flex",
     justifyContent: "space-between",
+    alignItems: "center",
     padding: "20px 40px",
-    borderBottom: "1px solid rgba(79,91,255,.2)",
-    backdropFilter: "blur(10px)",
+    width: "100%",
+    borderBottom: "1px solid #1a1a1a", // Subtle dark grey border
+    background: "#000000", // Pure Black
     position: "sticky",
     top: 0,
-    zIndex: 50,
+    zIndex: 100,
+    boxSizing: "border-box", // Critical for layout
   },
-  branding: { display: "flex", alignItems: "center", gap: 14 },
-  signalDot: { width: 8, height: 8, background: "#2ed47a", borderRadius: "50%" },
-  logo: { margin: 0, letterSpacing: "0.15em", fontWeight: 800 },
-  badge: { fontSize: 10, color: "#7c82ff" },
-  headerActions: { display: "flex", gap: 12 },
-  actionBtn: { background: "#4f5bff", color: "#fff", border: "none", padding: "10px 18px", cursor: "pointer" },
-  logoutBtn: { background: "#111", color: "#fff", border: "1px solid #222", padding: "10px 18px", cursor: "pointer" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 20, padding: 32 },
-  panel: { background: "#0b0d17", border: "1px solid #1e2233", padding: 24 },
-  panelTitle: { marginBottom: 12, color: "#4f5bff" },
-  summaryText: { lineHeight: 1.6 },
-  alertRed: { color: "#ff5a5f", fontWeight: 700 },
-  mono: { fontFamily: "monospace" },
-  tags: { display: "flex", gap: 8, marginTop: 12 },
-  tag: { background: "#111827", border: "1px solid #1e2233", padding: "4px 8px" },
-  statGrid: { display: "flex", justifyContent: "space-between" },
-  list: { paddingLeft: 18, lineHeight: 1.6 },
-  statusRow: { display: "flex", justifyContent: "space-between", marginBottom: 8 },
-  good: { color: "#2ed47a" },
-  table: { width: "100%", borderCollapse: "collapse" },
-  badgeOpen: { color: "#ffd166" },
-  badgeCritical: { color: "#ff5a5f" },
-};
+  branding: { display: "flex", alignItems: "center", gap: "16px" },
+  signalDot: { width: "8px", height: "8px", background: "#2ed47a", borderRadius: "50%", boxShadow: "0 0 10px #2ed47a" },
+  logo: { margin: 0, fontSize: "20px", fontWeight: "800", letterSpacing: "0.15em", color: "#fff" },
+  badge: { 
+    fontSize: "10px", 
+    background: "#111", 
+    color: "#7c82ff",
