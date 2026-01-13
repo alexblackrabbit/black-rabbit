@@ -21,7 +21,7 @@ export async function GET(req) {
     const {
       data: { user },
       error: authError
-    } = await authClient.auth.getUser(token);
+    } = await authClient.auth.getUser({ access_token: token });
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
