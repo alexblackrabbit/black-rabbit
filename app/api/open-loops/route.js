@@ -5,6 +5,29 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req) {
   try {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+
+    /* ───────────── AUTH CLIENT (ANON KEY) ───────────── */
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    const {
+      data: { user },
+      error: authError
+    } = await authClient.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    /* ───────────── DATA CLIENT (SERVICE ROLE) ───────────── */
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -12,22 +35,6 @@ export async function GET(req) {
 
     const { searchParams } = new URL(req.url);
     const scope = searchParams.get("scope") || "my";
-
-    /* ───────────── AUTH ───────────── */
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: authError
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     /* ───────────── MAP USER → SLACK USER ───────────── */
     const { data: slackUser } = await supabase
@@ -70,7 +77,7 @@ export async function GET(req) {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    /* ───────────── PERSONAL FILTER (MY OPEN LOOPS) ───────────── */
+    /* ───────────── PERSONAL FILTER ───────────── */
     if (scope === "my") {
       query = query.or(
         `
