@@ -1,41 +1,67 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
+import {
+  FiMessageSquare,
+  FiUsers,
+  FiHash,
+  FiActivity,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiClock,
+  FiRefreshCw
+} from "react-icons/fi";
 
-export default function MissionControl() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  
-  // REAL DATA STATE
+export default function Dashboard() {
   const [stats, setStats] = useState({
     messages: 0,
-    newMessages: 0, // <--- Added this field
+    newMessages: 0,
     channels: 0,
     participants: 0,
-    lastSync: "Pending...",
-    status: "CONNECTING"
+    lastSync: "Never",
+    status: "Unknown"
   });
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClientComponentClient();
 
   // 🔒 Auth Check & Data Fetch
   useEffect(() => {
     const init = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
+      // 1. Get User & Session
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession(); 
+
+      if (!user || !session) {
         router.push("/login");
         return;
       }
 
-      // Fetch Real Stats
+      // 2. Fetch Real Stats (With Auth & Timezone)
       try {
-        const res = await fetch("/api/dashboard/stats");
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        const res = await fetch("/api/dashboard/stats", {
+            headers: {
+                "x-timezone": userTimezone,
+                "Authorization": `Bearer ${session.access_token}` // <--- PASS THE KEY
+            }
+        });
+        
+        if (res.status === 401) {
+            console.error("Unauthorized access");
+            return;
+        }
+
         const realData = await res.json();
         
+        // Only update if we got valid data back
         if (realData.messages !== undefined) {
             setStats({
                 messages: realData.messages,
-                newMessages: realData.newMessages, // <--- Store it
+                newMessages: realData.newMessages,
                 channels: realData.channels,
                 participants: realData.participants,
                 lastSync: realData.lastSync ? new Date(realData.lastSync).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Never",
@@ -49,207 +75,174 @@ export default function MissionControl() {
       setLoading(false);
     };
     init();
-  }, [router]);
+  }, [router, supabase]);
 
   if (loading) {
-    return <div style={styles.loading}>INITIALIZING UPLINK...</div>;
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+        <p className="text-gray-500 animate-pulse">Loading Headquarters...</p>
+      </div>
+    );
   }
 
   return (
-    <div style={styles.page}>
-      
-      {/* ──────────────── HEADER ──────────────── */}
-      <nav style={styles.topNav}>
-        <div style={styles.navLeft}>
-          <div style={styles.logo}>BLACK RABBIT</div>
-        </div>
-        <div style={styles.navRight}>
-          <div style={styles.navControl}>
-            <span style={styles.navLabel}>SOURCES:</span>
-            <select style={styles.navSelect}>
-              <option>All Sources</option>
-              <option>Slack Only</option>
-            </select>
-          </div>
-          <button style={styles.generateBtn}>GENERATE NOW</button>
-          <div style={styles.divider}></div>
-          <span style={styles.icon}>🔔</span>
-          <div style={styles.avatar}>AM</div>
-        </div>
-      </nav>
-
-      {/* ──────────────── DASHBOARD GRID ──────────────── */}
-      <main style={styles.grid}>
+    <div className="min-h-screen bg-[#FDFBF7] p-8 font-sans">
+      <div className="max-w-6xl mx-auto space-y-12">
         
-        {/* 🔹 BLOCK 1: ACTIVITY SNAPSHOT (WIRED) */}
-        <section style={{ ...styles.panel, gridColumn: "span 12", flexDirection: "row", justifyContent: "space-around", alignItems: "center", padding: "20px 0" }}>
-          
-          {/* MESSAGES CARD (UPDATED) */}
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>{stats.messages}</span>
-            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                <span style={styles.statLabel}>Messages</span>
-                {/* Green badge if new messages exist */}
-                {stats.newMessages > 0 && (
-                    <span style={{color: '#2ED47A', fontSize: '10px', fontWeight: '600', marginTop: '2px', letterSpacing: '0.05em'}}>
-                        +{stats.newMessages} today
-                    </span>
-                )}
-            </div>
-          </div>
-
-          <div style={styles.statSeparator}></div>
-          
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>{stats.channels}</span>
-            <span style={styles.statLabel}>Channels</span>
-          </div>
-          
-          <div style={styles.statSeparator}></div>
-          
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>{stats.participants}</span>
-            <span style={styles.statLabel}>Participants</span>
-          </div>
-          
-          <div style={styles.statSeparator}></div>
-          
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>Slack</span>
-            <span style={styles.statLabel}>Connected</span>
-          </div>
-        </section>
-
-        {/* 🔹 BLOCK 2: NEEDS ATTENTION (Placeholder) */}
-        <section style={{ ...styles.panel, gridColumn: "span 6", borderColor: "#333" }}>
-          <div style={styles.panelHeader}>
-            <h2 style={styles.panelTitle}>Needs Attention</h2>
-            <div style={styles.liveDot}></div>
-          </div>
-          <ul style={styles.alertList}>
-            <li style={{...styles.alertItem, borderLeft: "3px solid #FF5A5F"}}>
-              <div style={styles.alertHeader}>
-                <span style={{color: "#FF5A5F", fontWeight: "700"}}>CRITICAL</span>
-                <span style={styles.meta}>#exec • 12h ago</span>
-              </div>
-              <div style={styles.alertBody}>Pricing decision unresolved. Raised 3x without answer.</div>
-            </li>
-            <li style={{...styles.alertItem, borderLeft: "3px solid #FFD166"}}>
-              <div style={styles.alertHeader}>
-                <span style={{color: "#FFD166", fontWeight: "700"}}>BLOCKED</span>
-                <span style={styles.meta}>#marketing • 4h ago</span>
-              </div>
-              <div style={styles.alertBody}>Launch assets waiting on final approval.</div>
-            </li>
-          </ul>
-        </section>
-
-        {/* 🔹 BLOCK 3: ACTION ITEMS (Placeholder) */}
-        <section style={{ ...styles.panel, gridColumn: "span 6" }}>
-          <div style={styles.panelHeader}>
-            <h2 style={styles.panelTitle}>Action Items</h2>
-            <button style={styles.textBtn}>View All</button>
-          </div>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Task</th>
-                <th style={styles.th}>Owner</th>
-                <th style={styles.th}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={styles.tr}>
-                <td style={styles.td}>Decide launch pricing</td>
-                <td style={styles.td}>Alex</td>
-                <td style={styles.td}><span style={styles.statusOpen}>OPEN</span></td>
-              </tr>
-              <tr style={styles.tr}>
-                <td style={styles.td}>Approve landing page copy</td>
-                <td style={styles.td}>Becca</td>
-                <td style={styles.td}><span style={styles.statusOverdue}>OVERDUE</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        {/* 🔹 BLOCK 5: DAILY SUMMARY (Placeholder) */}
-        <section style={{ ...styles.panel, gridColumn: "span 12", minHeight: "400px" }}>
-          <div style={{...styles.panelHeader, borderBottom: "1px solid #222", paddingBottom: "16px"}}>
-            <div>
-              <h2 style={{...styles.panelTitle, fontSize: "16px", color: "#FFF"}}>Daily Summary</h2>
-              <span style={styles.meta}>Real-time analysis pending...</span>
-            </div>
-          </div>
-          <div style={styles.summaryContent}>
-            <p style={styles.summaryText}>
-                Connect the Neural Engine (OpenAI) to generate the daily situation report based on the {stats.messages} ingested messages.
+        {/* HEADER */}
+        <header className="flex justify-between items-end border-b border-gray-200 pb-6">
+          <div>
+            <h1 className="text-4xl font-light tracking-tight text-gray-900">
+              Operations Center
+            </h1>
+            <p className="text-sm text-gray-500 mt-2 tracking-wide uppercase">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
-        </section>
+          <div className="flex items-center space-x-2 text-xs font-mono text-gray-400">
+            <FiActivity className="text-emerald-500" />
+            <span>SYSTEM: {stats.status}</span>
+          </div>
+        </header>
 
-        {/* 🔹 BLOCK 4: SYSTEM HEALTH (WIRED) */}
-        <section style={{ ...styles.panel, gridColumn: "span 12", flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", background: "#0D0D0D" }}>
-          <div style={{display: "flex", gap: "24px"}}>
-            <div style={styles.healthItem}>
-              <span style={styles.meta}>STATUS</span>
-              <span style={{color: "#2ED47A", fontWeight: "700", fontSize: "12px"}}>● {stats.status}</span>
+        {/* METRICS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Card 1: Messages */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <FiMessageSquare className="w-5 h-5 text-gray-600" />
+              </div>
+              <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                +{stats.newMessages} today
+              </span>
             </div>
-            <div style={styles.healthItem}>
-              <span style={styles.meta}>LAST SYNC</span>
-              <span style={{color: "#CCC", fontSize: "12px"}}>{stats.lastSync}</span>
-            </div>
-            <div style={styles.healthItem}>
-              <span style={styles.meta}>INGESTED</span>
-              <span style={{color: "#CCC", fontSize: "12px"}}>{stats.messages} Messages</span>
+            <div className="space-y-1">
+              <h3 className="text-3xl font-semibold text-gray-900">{stats.messages}</h3>
+              <p className="text-sm text-gray-500">Total Messages</p>
             </div>
           </div>
-          <span style={styles.meta}>v1.0.6</span>
-        </section>
 
-      </main>
+          {/* Card 2: Channels */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <FiHash className="w-5 h-5 text-gray-600" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-3xl font-semibold text-gray-900">{stats.channels}</h3>
+              <p className="text-sm text-gray-500">Active Channels</p>
+            </div>
+          </div>
+
+          {/* Card 3: Team */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <FiUsers className="w-5 h-5 text-gray-600" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-3xl font-semibold text-gray-900">{stats.participants}</h3>
+              <p className="text-sm text-gray-500">Team Members</p>
+            </div>
+          </div>
+
+          {/* Card 4: Last Sync */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-gray-50 rounded-lg">
+                <FiClock className="w-5 h-5 text-gray-600" />
+              </div>
+              <FiRefreshCw className="w-3 h-3 text-gray-400 animate-spin-slow" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-semibold text-gray-900">{stats.lastSync}</h3>
+              <p className="text-sm text-gray-500">Last Ingestion</p>
+            </div>
+          </div>
+        </div>
+
+        {/* AI INSIGHTS SECTION (PLACEHOLDERS) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Main Feed: Daily Summary */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+                <h2 className="text-lg font-medium text-gray-900">Executive Briefing</h2>
+                <span className="text-xs text-gray-400 font-mono">AI-GENERATED</span>
+              </div>
+              <div className="p-8 space-y-6">
+                <div className="flex gap-4">
+                  <div className="w-1 h-16 bg-blue-500 rounded-full flex-shrink-0"></div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Project Alpha Update</h3>
+                    <p className="text-gray-600 leading-relaxed text-sm">
+                      The engineering team has resolved the critical API latency issue. 
+                      Deployment is scheduled for 2:00 PM EST. Marketing is preparing the 
+                      announcement for tomorrow morning.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-1 h-16 bg-purple-500 rounded-full flex-shrink-0"></div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Q1 Planning</h3>
+                    <p className="text-gray-600 leading-relaxed text-sm">
+                      Strategy meeting confirmed for Thursday. Key discussion points: 
+                      budget allocation for the new hiring round and selecting the 
+                      vendor for the cloud migration.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar: Action Items & Blockers */}
+          <div className="space-y-6">
+            
+            {/* Needs Attention */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <FiAlertCircle className="text-amber-500" />
+                <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Needs Attention</h2>
+              </div>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg text-sm text-amber-900">
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  Approve final design mocks by 5 PM
+                </li>
+                <li className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg text-sm text-amber-900">
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  Review contract updates from Legal
+                </li>
+              </ul>
+            </div>
+
+            {/* Completed */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <FiCheckCircle className="text-emerald-500" />
+                <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Resolved Today</h2>
+              </div>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3 text-sm text-gray-500 line-through">
+                  <div className="w-1.5 h-1.5 bg-emerald-200 rounded-full flex-shrink-0"></div>
+                  Server migration complete
+                </li>
+                <li className="flex items-center gap-3 text-sm text-gray-500 line-through">
+                  <div className="w-1.5 h-1.5 bg-emerald-200 rounded-full flex-shrink-0"></div>
+                  Client onboarded successfully
+                </li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
-/* ──────────────── STYLES (UNCHANGED) ──────────────── */
-const styles = {
-  page: { backgroundColor: "#0B0B0B", color: "#E5E7EB", minHeight: "100vh", width: "100%", fontFamily: "'Inter', sans-serif", paddingBottom: "40px" },
-  loading: { height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0B0B0B", color: "#666", letterSpacing: "0.1em", fontSize: "12px" },
-  topNav: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 32px", height: "64px", background: "rgba(11, 11, 11, 0.95)", borderBottom: "1px solid #1F1F1F", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(10px)" },
-  logo: { fontSize: "14px", fontWeight: "800", letterSpacing: "0.1em", color: "#FFF" },
-  navRight: { display: "flex", alignItems: "center", gap: "24px" },
-  navControl: { display: "flex", alignItems: "center", gap: "8px" },
-  navLabel: { fontSize: "10px", color: "#666", fontWeight: "600", letterSpacing: "0.05em" },
-  navSelect: { background: "transparent", border: "none", color: "#FFF", fontSize: "12px", fontWeight: "500", cursor: "pointer", outline: "none", fontFamily: "inherit" },
-  generateBtn: { background: "#FFF", color: "#000", border: "none", padding: "6px 12px", fontSize: "11px", fontWeight: "700", borderRadius: "2px", cursor: "pointer", letterSpacing: "0.05em" },
-  divider: { width: "1px", height: "16px", background: "#333" },
-  icon: { fontSize: "14px", cursor: "pointer", opacity: 0.7 },
-  avatar: { width: "24px", height: "24px", borderRadius: "50%", background: "#222", color: "#AAA", fontSize: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "600" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "24px", padding: "32px", maxWidth: "1600px", margin: "0 auto" },
-  panel: { background: "#121212", border: "1px solid #1F1F1F", borderRadius: "6px", display: "flex", flexDirection: "column", padding: "24px" },
-  panelHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" },
-  panelTitle: { fontSize: "12px", fontWeight: "700", color: "#888", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 },
-  liveDot: { width: "6px", height: "6px", background: "#2ED47A", borderRadius: "50%", boxShadow: "0 0 8px #2ED47A" },
-  statItem: { display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" },
-  statValue: { fontSize: "24px", fontWeight: "600", color: "#FFF" },
-  statLabel: { fontSize: "11px", color: "#666", fontWeight: "500" },
-  statSeparator: { width: "1px", height: "32px", background: "#222" },
-  alertList: { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" },
-  alertItem: { background: "#181818", padding: "12px 16px", borderRadius: "4px" },
-  alertHeader: { display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "10px" },
-  alertBody: { fontSize: "13px", color: "#E5E7EB", lineHeight: "1.4" },
-  table: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
-  th: { textAlign: "left", color: "#666", paddingBottom: "12px", fontSize: "11px", fontWeight: "600" },
-  tr: { borderBottom: "1px solid #1F1F1F" },
-  td: { padding: "12px 0", color: "#CCC" },
-  textBtn: { background: "none", border: "none", color: "#666", fontSize: "11px", cursor: "pointer" },
-  statusOpen: { background: "rgba(255,255,255,0.1)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px", fontWeight: "600", color: "#FFF" },
-  statusOverdue: { background: "rgba(255, 90, 95, 0.2)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px", fontWeight: "600", color: "#FF5A5F" },
-  statusDone: { background: "rgba(46, 212, 122, 0.2)", padding: "2px 6px", borderRadius: "2px", fontSize: "10px", fontWeight: "600", color: "#2ED47A" },
-  summaryContent: { display: "flex", flexDirection: "column", gap: "32px", marginTop: "16px" },
-  summaryText: { fontSize: "14px", lineHeight: "1.6", color: "#CCC", maxWidth: "800px" },
-  outlineBtn: { background: "transparent", border: "1px solid #333", color: "#888", padding: "4px 10px", fontSize: "11px", borderRadius: "2px", cursor: "pointer" },
-  healthItem: { display: "flex", flexDirection: "column", gap: "2px" },
-  meta: { fontSize: "10px", color: "#666", fontWeight: "500" },
-};
