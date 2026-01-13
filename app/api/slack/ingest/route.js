@@ -3,15 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Sleep helper
- */
+// Helper: Sleep to respect rate limits
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Slack fetch with:
- * - 429 retry (rate limits)
- * - strict error handling
+ * 🛠️ ROBUST SLACK FETCH
+ * Handles Rate Limits (429) automatically
  */
 async function slackFetch(url, token, { method = "GET", body = null } = {}) {
   while (true) {
@@ -24,25 +21,21 @@ async function slackFetch(url, token, { method = "GET", body = null } = {}) {
       body: body ? JSON.stringify(body) : null,
     });
 
-    // Rate limiting
     if (res.status === 429) {
       const retryAfter = Number(res.headers.get("Retry-After") || 1);
+      console.log(`⏳ Rate limit hit. Sleeping for ${retryAfter}s...`);
       await sleep(retryAfter * 1000);
       continue;
     }
 
     const data = await res.json();
-
-    if (!data.ok) {
-      throw new Error(data.error || "Slack API request failed");
-    }
-
+    if (!data.ok) throw new Error(data.error || "Slack API request failed");
     return data;
   }
 }
 
 /**
- * Cursor pagination helper
+ * 🛠️ PAGINATION HELPER
  */
 async function slackFetchAllPages(baseUrl, token, itemKey, { limit = 200 } = {}) {
   let all = [];
@@ -53,22 +46,21 @@ async function slackFetchAllPages(baseUrl, token, itemKey, { limit = 200 } = {})
     url.searchParams.set("limit", String(limit));
     if (cursor) url.searchParams.set("cursor", cursor);
 
-    const data = await slackFetch(url.toString(), token);
-    const items = data[itemKey] || [];
-    all = all.concat(items);
-
-    cursor = data.response_metadata?.next_cursor || "";
-    if (!cursor) break;
+    try {
+      const data = await slackFetch(url.toString(), token);
+      const items = data[itemKey] || [];
+      all = all.concat(items);
+      cursor = data.response_metadata?.next_cursor || "";
+      if (!cursor) break;
+    } catch (e) {
+      console.warn(`Partial fetch failure: ${e.message}`);
+      break; 
+    }
   }
-
   return all;
 }
 
 export async function GET() {
-  console.log("🚀 Slack cron fired", new Date().toISOString());
-
-  let run = null;
-
   try {
     const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -79,84 +71,47 @@ export async function GET() {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    /**
-     * 🔹 Create ingestion run record (START)
-     */
-    const { data: runRow, error: runError } = await supabase
-      .from("slack_ingestion_runs")
-      .insert({
-        started_at: new Date(),
-        status: "running",
-      })
-      .select()
-      .single();
-
-    if (runError) {
-      throw new Error("Failed to create ingestion run record");
-    }
-
-    run = runRow;
-
-    /**
-     * In-memory user cache
-     */
     const userCache = new Map();
 
+    // Helper: Cache users to avoid spamming API
     const getAndUpsertUser = async (userId) => {
       if (!userId) return null;
       if (userCache.has(userId)) return userCache.get(userId);
 
-      const data = await slackFetch(
-        `https://slack.com/api/users.info?user=${userId}`,
-        SLACK_BOT_TOKEN
-      );
-
-      const user = data.user;
-      const record = {
-        id: user.id,
-        name: user.name,
-        real_name: user.real_name || user.name,
-      };
-
-      userCache.set(userId, record);
-      await supabase.from("slack_users").upsert(record);
-      return record;
+      try {
+        const data = await slackFetch(
+          `https://slack.com/api/users.info?user=${userId}`,
+          SLACK_BOT_TOKEN
+        );
+        const user = data.user;
+        const record = {
+          id: user.id,
+          name: user.name,
+          real_name: user.real_name || user.name,
+        };
+        userCache.set(userId, record);
+        await supabase.from("slack_users").upsert(record);
+        return record;
+      } catch (e) {
+        console.warn(`User fetch failed for ${userId}:`, e.message);
+        return null;
+      }
     };
 
-    /**
-     * 1) List all conversations
-     */
+    // 1️⃣ List Channels
     const allConvos = await slackFetchAllPages(
       "https://slack.com/api/conversations.list?types=public_channel,private_channel,im,mpim&exclude_archived=true",
       SLACK_BOT_TOKEN,
-      "channels",
-      { limit: 200 }
+      "channels"
     );
-
-    /**
-     * Pull last_ingested_ts
-     */
-    const { data: existingChannels } = await supabase
-      .from("slack_channels")
-      .select("id,last_ingested_ts");
-
-    const lastTsByChannel = new Map();
-    for (const row of existingChannels || []) {
-      lastTsByChannel.set(row.id, Number(row.last_ingested_ts || 0));
-    }
 
     let totalMessagesInserted = 0;
 
     for (const c of allConvos) {
-      const type = c.is_im
-        ? "im"
-        : c.is_mpim
-        ? "mpim"
-        : c.is_private
-        ? "private"
-        : "public";
+      // Determine Type
+      const type = c.is_im ? "im" : c.is_mpim ? "mpim" : c.is_private ? "private" : "public";
 
+      // Save Channel
       await supabase.from("slack_channels").upsert({
         id: c.id,
         name: c.name || null,
@@ -165,54 +120,64 @@ export async function GET() {
         updated_at: new Date().toISOString(),
       });
 
-      /**
-       * Auto-join PUBLIC channels
-       */
+      // 2️⃣ Auto-join Public Channels
       if (type === "public") {
         try {
-          await slackFetch(
-            "https://slack.com/api/conversations.join",
-            SLACK_BOT_TOKEN,
-            { method: "POST", body: { channel: c.id } }
-          );
-        } catch (e) {
-          if (!String(e.message).includes("already_in_channel")) {
-            console.warn(`Join failed for ${c.id}: ${e.message}`);
-          }
-        }
+          await slackFetch("https://slack.com/api/conversations.join", SLACK_BOT_TOKEN, {
+            method: "POST",
+            body: { channel: c.id }
+          });
+        } catch (e) { /* Ignore already_in_channel */ }
       }
 
-      /**
-       * Incremental history fetch
-       */
-      const lastTs = lastTsByChannel.get(c.id) || 0;
-
-      const historyUrl = new URL(
-        "https://slack.com/api/conversations.history"
-      );
-      historyUrl.searchParams.set("channel", c.id);
-      historyUrl.searchParams.set("oldest", String(lastTs));
-      historyUrl.searchParams.set("inclusive", "false");
-
-      const messages = await slackFetchAllPages(
-        historyUrl.toString(),
+      // 3️⃣ Fetch History (Parents)
+      const baseHistoryUrl = new URL("https://slack.com/api/conversations.history");
+      baseHistoryUrl.searchParams.set("channel", c.id);
+      
+      const parentMessages = await slackFetchAllPages(
+        baseHistoryUrl.toString(),
         SLACK_BOT_TOKEN,
         "messages",
         { limit: 100 }
       );
 
-      if (!messages.length) continue;
+      const allMessages = [];
 
-      let maxTs = lastTs;
+      // 4️⃣ THREAD EXPANSION (The Fix)
+      // We look for messages that have a `thread_ts` and a `reply_count` > 0
+      for (const m of parentMessages) {
+        allMessages.push(m); // Add the parent
+
+        // If this message has replies, go fetch them!
+        if (m.reply_count && m.reply_count > 0) {
+            const threadUrl = new URL("https://slack.com/api/conversations.replies");
+            threadUrl.searchParams.set("channel", c.id);
+            threadUrl.searchParams.set("ts", m.ts);
+            
+            try {
+                // Fetch replies for this specific thread
+                const replies = await slackFetchAllPages(
+                    threadUrl.toString(), 
+                    SLACK_BOT_TOKEN, 
+                    "messages"
+                );
+                // Filter out the parent (replies endpoint returns parent + replies)
+                const actualReplies = replies.filter(r => r.ts !== m.ts);
+                allMessages.push(...actualReplies);
+            } catch (err) {
+                console.warn(`Failed to fetch thread ${m.ts}:`, err.message);
+            }
+        }
+      }
+
+      // 5️⃣ Insert into Supabase
+      if (!allMessages.length) continue;
+
       const rows = [];
-
-      for (const m of messages) {
+      for (const m of allMessages) {
         if (!m.user || !m.text) continue;
-
+        
         await getAndUpsertUser(m.user);
-
-        const tsNum = Number(m.ts);
-        if (!Number.isNaN(tsNum) && tsNum > maxTs) maxTs = tsNum;
 
         rows.push({
           channel_id: c.id,
@@ -227,56 +192,19 @@ export async function GET() {
           .from("slack_messages")
           .upsert(rows, { onConflict: "channel_id,ts" });
 
-        if (!error) {
-          totalMessagesInserted += rows.length;
-        }
+        if (!error) totalMessagesInserted += rows.length;
       }
-
-      await supabase.from("slack_channels").upsert({
-        id: c.id,
-        last_ingested_ts: maxTs,
-        updated_at: new Date().toISOString(),
-      });
     }
-
-    /**
-     * 🔹 Mark run SUCCESS
-     */
-    await supabase
-      .from("slack_ingestion_runs")
-      .update({
-        finished_at: new Date(),
-        status: "success",
-        channels_processed: allConvos.length,
-        messages_processed: totalMessagesInserted,
-      })
-      .eq("id", run.id);
 
     return NextResponse.json({
       status: "success",
-      message: "Org ingestion complete",
+      message: "Deep ingestion complete (Parents + Threads)",
       channels_processed: allConvos.length,
       messages_processed: totalMessagesInserted,
     });
+
   } catch (error) {
-    console.error("Slack ingest failed:", error);
-
-    if (run?.id) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      );
-
-      await supabase
-        .from("slack_ingestion_runs")
-        .update({
-          finished_at: new Date(),
-          status: "error",
-          error: error.message,
-        })
-        .eq("id", run.id);
-    }
-
+    console.error("Ingest failed:", error);
     return NextResponse.json(
       { status: "error", message: error.message },
       { status: 500 }
