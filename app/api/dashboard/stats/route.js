@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { utcToZonedTime, zonedTimeToUtc } from "date-fns-tz"; // 📦 New Import
 
 export const dynamic = "force-dynamic";
 
@@ -10,33 +11,56 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // 1. Get Total Messages (All Time)
+    // 1. RESOLVE WORKSPACE TIMEZONE
+    // We grab the first workspace (since MVP is single-tenant)
+    const { data: workspace } = await supabase
+      .from("slack_workspaces")
+      .select("timezone")
+      .limit(1)
+      .single();
+
+    // Default to UTC if ingestion hasn't run yet
+    const tz = workspace?.timezone || "UTC"; 
+
+    // 2. CALCULATE "MIDNIGHT" IN THAT TIMEZONE
+    // This fixes the "Server is UTC but user is in LA" bug
+    const now = new Date();
+    
+    // Convert current UTC time to the Workspace Time
+    const zonedNow = utcToZonedTime(now, tz);
+    
+    // Create a date for "Midnight" relative to that timezone
+    const zonedMidnight = new Date(
+      zonedNow.getFullYear(),
+      zonedNow.getMonth(),
+      zonedNow.getDate(),
+      0, 0, 0 // 00:00:00
+    );
+
+    // Convert that "Midnight" back to absolute UTC timestamp for the DB
+    const startOfDayUtc = zonedTimeToUtc(zonedMidnight, tz);
+    const startOfDayUnix = startOfDayUtc.getTime() / 1000;
+
+    // 3. GET TOTAL MESSAGES
     const { count: totalMessages, error: totalError } = await supabase
       .from("slack_messages")
       .select("*", { count: "exact", head: true });
 
-    // 2. Get Messages "New Today" (Robust Mode)
-    // We calculate Midnight UTC to ensure consistency regardless of where the server lives.
-    const now = new Date();
-    const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const startOfDayUnix = startOfDayUTC.getTime() / 1000; // Convert ms to seconds
-
+    // 4. GET NEW MESSAGES (Using accurate workspace timestamp)
     const { count: newMessages, error: newError } = await supabase
       .from("slack_messages")
       .select("*", { count: "exact", head: true })
-      .gte("ts_num", startOfDayUnix); // <--- Uses numeric index (Fast & Accurate)
+      .gte("ts_num", startOfDayUnix);
 
-    // 3. Get Total Channels
+    // 5. GET OTHER STATS
     const { count: channelCount } = await supabase
       .from("slack_channels")
       .select("*", { count: "exact", head: true });
 
-    // 4. Get Participants
     const { count: participantCount } = await supabase
       .from("slack_users")
       .select("*", { count: "exact", head: true });
 
-    // 5. Get Last Sync Time
     const { data: lastMsg } = await supabase
       .from("slack_messages")
       .select("created_at")
@@ -52,7 +76,8 @@ export async function GET() {
       channels: channelCount || 0,
       participants: participantCount || 0,
       lastSync: lastMsg?.created_at || null,
-      status: "OPTIMAL"
+      status: "OPTIMAL",
+      timezone: tz // Returning this helps you verify it works
     });
 
   } catch (error) {
