@@ -1,27 +1,19 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-
-    /* ───────────── AUTH CLIENT (ANON KEY) ───────────── */
-    const authClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
+    /* ───────────── AUTH (COOKIE-BASED) ───────────── */
+    const supabaseAuth = createRouteHandlerClient({ cookies });
 
     const {
       data: { user },
       error: authError
-    } = await authClient.auth.getUser({ access_token: token });
+    } = await supabaseAuth.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,12 +39,11 @@ export async function GET(req) {
       return NextResponse.json({ items: [] });
     }
 
-    /* ───────────── BASE QUERY (OPEN LOOPS) ───────────── */
+    /* ───────────── BASE QUERY ───────────── */
     let query = supabase
       .from("slack_messages")
       .select(`
         id,
-        text,
         created_at,
         slack_user_id,
         slack_users ( real_name ),
@@ -62,18 +53,15 @@ export async function GET(req) {
           is_decision,
           is_question,
           is_action_item,
-          mentioned_users,
           inferred_owner
         )
       `)
-      .or(
-        `
+      .or(`
         message_tags.is_blocker.eq.true,
         message_tags.is_decision.eq.true,
         message_tags.is_question.eq.true,
         message_tags.is_action_item.eq.true
-      `
-      )
+      `)
       .order("created_at", { ascending: false })
       .limit(20);
 
@@ -90,7 +78,7 @@ export async function GET(req) {
     const { data, error } = await query;
     if (error) throw error;
 
-    /* ───────────── TRANSFORM → LOOPS ───────────── */
+    /* ───────────── TRANSFORM ───────────── */
     const items = (data || []).map((m) => {
       const tags = m.message_tags || {};
 
@@ -125,7 +113,7 @@ export async function GET(req) {
 
     return NextResponse.json({ items });
   } catch (err) {
-    console.error("Open loops error:", err);
+    console.error("Open Loops error:", err);
     return NextResponse.json(
       { error: err.message },
       { status: 500 }
