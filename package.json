@@ -16,6 +16,8 @@
     "react-dom": "^18.2.0",
     "date-fns-tz": "^2.0.0",
     "react-icons": "^5.0.1"
+    "openai": "^4.0.0"
+
   },
   "devDependencies": {
     "autoprefixer": "^10.0.1",
