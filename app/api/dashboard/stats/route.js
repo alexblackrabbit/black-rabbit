@@ -15,23 +15,23 @@ export async function GET() {
       .from("slack_messages")
       .select("*", { count: "exact", head: true });
 
-    // 2. Get Messages Today (Since Midnight)
-    // We compare the 'ts' (timestamp) field against midnight today
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const startOfDayTs = (startOfDay.getTime() / 1000).toString();
+    // 2. Get Messages "New Today" (Robust Mode)
+    // We calculate Midnight UTC to ensure consistency regardless of where the server lives.
+    const now = new Date();
+    const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const startOfDayUnix = startOfDayUTC.getTime() / 1000; // Convert ms to seconds
 
     const { count: newMessages, error: newError } = await supabase
       .from("slack_messages")
       .select("*", { count: "exact", head: true })
-      .gte("ts", startOfDayTs);
+      .gte("ts_num", startOfDayUnix); // <--- Uses numeric index (Fast & Accurate)
 
     // 3. Get Total Channels
     const { count: channelCount } = await supabase
       .from("slack_channels")
       .select("*", { count: "exact", head: true });
 
-    // 4. Get Participants (Unique Users)
+    // 4. Get Participants
     const { count: participantCount } = await supabase
       .from("slack_users")
       .select("*", { count: "exact", head: true });
@@ -48,7 +48,7 @@ export async function GET() {
 
     return NextResponse.json({
       messages: totalMessages || 0,
-      newMessages: newMessages || 0, // <--- This is the delta you wanted
+      newMessages: newMessages || 0,
       channels: channelCount || 0,
       participants: participantCount || 0,
       lastSync: lastMsg?.created_at || null,
