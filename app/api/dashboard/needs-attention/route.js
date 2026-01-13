@@ -11,33 +11,55 @@ export async function GET() {
     );
 
     const { data, error } = await supabase
-      .from("slack_messages")
+      .from("message_tags")
       .select(`
-        id,
-        text,
-        created_at,
-        slack_users (
-          real_name
-        ),
-        message_tags (
-          is_blocker,
-          is_urgent,
-          is_action_item,
-          is_decision,
-          is_question,
-          confidence
+        message_id,
+        is_blocker,
+        is_urgent,
+        is_action_item,
+        is_decision,
+        is_question,
+        confidence,
+        slack_messages (
+          id,
+          text,
+          created_at,
+          slack_users (
+            real_name
+          )
         )
       `)
       .or(
-        "message_tags.is_blocker.eq.true,message_tags.is_urgent.eq.true,message_tags.is_action_item.eq.true,message_tags.is_decision.eq.true,message_tags.is_question.eq.true"
+        "is_blocker.eq.true,is_urgent.eq.true,is_action_item.eq.true,is_decision.eq.true,is_question.eq.true"
       )
-      .order("created_at", { ascending: false })
+      .order("is_blocker", { ascending: false })
+      .order("is_urgent", { ascending: false })
+      .order("message_id", { ascending: false })
       .limit(20);
 
     if (error) throw error;
 
-    return NextResponse.json({ items: data || [] });
+    // Flatten shape for the UI
+    const items = (data || []).map((row) => ({
+      id: row.slack_messages.id,
+      text: row.slack_messages.text,
+      created_at: row.slack_messages.created_at,
+      author: row.slack_messages.slack_users?.real_name || "Unknown",
+      tags: {
+        is_blocker: row.is_blocker,
+        is_urgent: row.is_urgent,
+        is_action_item: row.is_action_item,
+        is_decision: row.is_decision,
+        is_question: row.is_question,
+        confidence: row.confidence
+      }
+    }));
+
+    return NextResponse.json({ items });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { error: err.message },
+      { status: 500 }
+    );
   }
 }
