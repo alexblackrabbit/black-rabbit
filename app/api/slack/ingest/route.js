@@ -71,6 +71,28 @@ export async function GET() {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // ---------------------------------------------------------
+    // 🆕 STEP 2: FETCH WORKSPACE INFO (TIMEZONE)
+    // ---------------------------------------------------------
+    const teamData = await slackFetch(
+      "https://slack.com/api/team.info",
+      SLACK_BOT_TOKEN
+    );
+
+    if (teamData.ok && teamData.team) {
+      const team = teamData.team;
+      console.log(`🏢 Workspace detected: ${team.name} (${team.tz})`);
+      
+      await supabase.from("slack_workspaces").upsert({
+        id: team.id,
+        name: team.name,
+        timezone: team.tz,               // e.g. "America/Los_Angeles"
+        timezone_offset: team.tz_offset  // e.g. -28800
+      });
+    }
+    // ---------------------------------------------------------
+
     const userCache = new Map();
 
     // Helper: Cache users to avoid spamming API
@@ -143,8 +165,7 @@ export async function GET() {
 
       const allMessages = [];
 
-      // 4️⃣ THREAD EXPANSION (The Fix)
-      // We look for messages that have a `thread_ts` and a `reply_count` > 0
+      // 4️⃣ THREAD EXPANSION (Deep Ingestion)
       for (const m of parentMessages) {
         allMessages.push(m); // Add the parent
 
@@ -184,7 +205,7 @@ export async function GET() {
           user_id: m.user,
           text: m.text,
           ts: m.ts,
-          ts_num: Number(m.ts) // <--- ADD THIS LINE
+          ts_num: Number(m.ts) // Numeric timestamp for robust sorting
         });
       }
 
@@ -199,7 +220,7 @@ export async function GET() {
 
     return NextResponse.json({
       status: "success",
-      message: "Deep ingestion complete (Parents + Threads)",
+      message: "Deep ingestion complete (Parents + Threads + Timezone)",
       channels_processed: allConvos.length,
       messages_processed: totalMessagesInserted,
     });
