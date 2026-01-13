@@ -49,7 +49,12 @@ export default function MissionControl() {
                 newMessages: realData.newMessages,
                 channels: realData.channels,
                 participants: realData.participants,
-                lastSync: realData.lastSync ? new Date(realData.lastSync).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Never",
+                lastSync: realData.lastSync 
+  ? new Date(realData.lastSync + "Z").toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    })
+  : "Never",
                 status: "OPTIMAL"
             });
         }
