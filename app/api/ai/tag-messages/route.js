@@ -15,7 +15,16 @@ export async function POST() {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // 1️⃣ Fetch messages that have NOT been tagged yet
+    // 1️⃣ Fetch already-tagged message IDs
+    const { data: tagged, error: taggedError } = await supabase
+      .from("message_tags")
+      .select("message_id");
+
+    if (taggedError) throw taggedError;
+
+    const taggedIds = tagged.map((t) => t.message_id);
+
+    // 2️⃣ Fetch untagged Slack messages
     const { data: messages, error } = await supabase
       .from("slack_messages")
       .select(`
@@ -27,14 +36,8 @@ export async function POST() {
           real_name
         )
       `)
-      .not(
-        "id",
-        "in",
-        supabase
-          .from("message_tags")
-          .select("message_id")
-      )
-      .limit(50); // batch size (safe MVP default)
+      .not("id", "in", `(${taggedIds.join(",") || 0})`)
+      .limit(50); // safe MVP batch size
 
     if (error) throw error;
 
@@ -42,7 +45,7 @@ export async function POST() {
       return NextResponse.json({ status: "no_messages_to_tag" });
     }
 
-    // 2️⃣ Build AI prompt
+    // 3️⃣ Build AI prompt
     const prompt = `
 You are an enterprise operations analyst.
 
@@ -74,7 +77,7 @@ ${messages
   .join("\n")}
 `;
 
-    // 3️⃣ Call OpenAI (Layer 1 model)
+    // 4️⃣ Call OpenAI (Layer 1 — deterministic tagging)
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1-turbo",
       temperature: 0,
@@ -87,7 +90,7 @@ ${messages
     const raw = completion.choices[0].message.content;
     const parsed = JSON.parse(raw);
 
-    // 4️⃣ Insert tags
+    // 5️⃣ Prepare inserts
     const inserts = parsed.map((tag) => ({
       message_id: tag.message_id,
       is_blocker: tag.is_blocker,
@@ -103,6 +106,7 @@ ${messages
       tag_version: 1
     }));
 
+    // 6️⃣ Insert / upsert tags (idempotent)
     const { error: insertError } = await supabase
       .from("message_tags")
       .upsert(inserts, {
