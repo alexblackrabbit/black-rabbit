@@ -184,6 +184,7 @@ export async function GET() {
           user_id: m.user,
           text: m.text,
           ts: m.ts,
+          ts_num: Number(m.ts) // <--- ADD THIS LINE
         });
       }
 
