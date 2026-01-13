@@ -8,6 +8,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// 🔒 Helper: safely parse JSON even if wrapped in ```json fences
+function safeParseJSON(raw) {
+  const cleaned = raw
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+
+  return JSON.parse(cleaned);
+}
+
 export async function POST() {
   try {
     const supabase = createClient(
@@ -24,7 +34,7 @@ export async function POST() {
 
     const taggedIds = tagged.map((t) => t.message_id);
 
-    // 2️⃣ Fetch untagged Slack messages
+    // 2️⃣ Fetch untagged Slack messages (small batch)
     const { data: messages, error } = await supabase
       .from("slack_messages")
       .select(`
@@ -37,7 +47,7 @@ export async function POST() {
         )
       `)
       .not("id", "in", `(${taggedIds.join(",") || 0})`)
-      .limit(50);
+      .limit(10);
 
     if (error) throw error;
 
@@ -51,6 +61,7 @@ You are an enterprise operations analyst.
 
 For EACH message, return structured tags.
 Return ONLY valid JSON.
+Do NOT include markdown, backticks, or explanations.
 
 Schema:
 [
@@ -77,7 +88,7 @@ ${messages
   .join("\n")}
 `;
 
-    // 4️⃣ Call OpenAI (Layer 1 — deterministic tagging)
+    // 4️⃣ Call OpenAI (Layer 1)
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0,
@@ -87,10 +98,12 @@ ${messages
       ]
     });
 
-    const raw = completion.choices[0].message.content;
-    const parsed = JSON.parse(raw);
+    // 5️⃣ Parse safely (THIS IS THE FIX)
+    const parsed = safeParseJSON(
+      completion.choices[0].message.content
+    );
 
-    // 5️⃣ Prepare inserts
+    // 6️⃣ Prepare inserts
     const inserts = parsed.map((tag) => ({
       message_id: tag.message_id,
       is_blocker: tag.is_blocker,
@@ -106,12 +119,10 @@ ${messages
       tag_version: 1
     }));
 
-    // 6️⃣ Insert tags (idempotent)
+    // 7️⃣ Insert tags
     const { error: insertError } = await supabase
       .from("message_tags")
-      .upsert(inserts, {
-        onConflict: "message_id"
-      });
+      .upsert(inserts, { onConflict: "message_id" });
 
     if (insertError) throw insertError;
 
