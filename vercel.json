@@ -3,6 +3,10 @@
     {
       "path": "/api/slack/ingest",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/ai/tag-messages",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
