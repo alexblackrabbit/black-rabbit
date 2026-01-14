@@ -35,9 +35,9 @@ export default function LoginPage() {
         });
         if (error) throw error;
 
-        // Email confirmation ON case
+        // Email confirmation enabled
         if (!data.session) {
-          setMessage("Check your email to confirm your account.");
+          setMessage("check your email to confirm your account");
         } else {
           router.push("/dashboard");
         }
@@ -55,12 +55,12 @@ export default function LoginPage() {
         <div style={styles.logo}>BLACK RABBIT</div>
 
         <h1 style={styles.heading}>
-          {mode === "login" ? "Sign In" : "Create Account"}
+          {mode === "login" ? "sign in" : "create account"}
         </h1>
 
         <input
           style={styles.input}
-          placeholder="Email"
+          placeholder="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -68,7 +68,7 @@ export default function LoginPage() {
 
         <input
           style={styles.input}
-          placeholder="Password"
+          placeholder="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -83,25 +83,25 @@ export default function LoginPage() {
           disabled={loading}
         >
           {loading
-            ? "PLEASE WAIT…"
+            ? "please wait…"
             : mode === "login"
-            ? "SIGN IN"
-            : "REGISTER"}
+            ? "sign in"
+            : "register"}
         </button>
 
         <div style={styles.switch}>
           {mode === "login" ? (
             <>
-              New here?{" "}
+              new here?{" "}
               <span onClick={() => setMode("register")} style={styles.link}>
-                Create an account
+                create an account
               </span>
             </>
           ) : (
             <>
-              Already have an account?{" "}
+              already have an account?{" "}
               <span onClick={() => setMode("login")} style={styles.link}>
-                Sign in
+                sign in
               </span>
             </>
           )}
@@ -116,7 +116,7 @@ export default function LoginPage() {
 const styles = {
   page: {
     height: "100vh",
-    background: "radial-gradient(circle at top, #111 0%, #000 60%)",
+    background: "radial-gradient(circle at top, #111 0%, #000 65%)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -127,27 +127,29 @@ const styles = {
     width: "420px",
     background: "#0B0B0B",
     border: "1px solid #1F1F1F",
-    borderRadius: "12px",
-    padding: "48px",
-    boxShadow: "0 40px 120px rgba(0,0,0,0.6)",
+    borderRadius: "14px",
+    padding: "52px",
+    boxShadow: "0 40px 140px rgba(0,0,0,0.7)",
     display: "flex",
     flexDirection: "column",
     gap: "16px",
   },
   logo: {
-    fontWeight: "800",
-    letterSpacing: "0.15em",
-    fontSize: "12px",
-    color: "#777",
+    fontWeight: "900",
+    letterSpacing: "0.28em",
+    fontSize: "20px",
+    color: "#FFF",
     marginBottom: "8px",
     textAlign: "center",
   },
   heading: {
-    fontSize: "26px",
+    fontSize: "24px",
     fontWeight: "800",
     textAlign: "center",
-    marginBottom: "24px",
-    color: "#FFD400", // bright yellow
+    marginBottom: "28px",
+    color: "#FFD400",
+    letterSpacing: "0.14em",
+    textTransform: "lowercase",
   },
   input: {
     background: "#111",
@@ -159,19 +161,20 @@ const styles = {
     outline: "none",
   },
   button: {
-    marginTop: "12px",
+    marginTop: "14px",
     background: "#FFD400",
     color: "#000",
     border: "none",
     borderRadius: "6px",
     padding: "14px",
     fontWeight: "800",
-    fontSize: "13px",
-    letterSpacing: "0.1em",
+    fontSize: "12px",
+    letterSpacing: "0.18em",
     cursor: "pointer",
+    textTransform: "lowercase",
   },
   switch: {
-    marginTop: "16px",
+    marginTop: "18px",
     textAlign: "center",
     fontSize: "12px",
     color: "#888",
