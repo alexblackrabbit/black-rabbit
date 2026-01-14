@@ -6,12 +6,10 @@ export async function GET(request) {
   const requestUrl = new URL(request.url);
   const cookieStore = cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-
   const callbackUrl = `${requestUrl.origin}/api/auth/slack/callback`;
 
-  // ⚡️ FIX: We REMOVED 'openid', 'profile', and 'email' from this list.
-  // Supabase OIDC adds them automatically now.
-  // We ONLY list the ingestion permissions you need for your dashboard.
+  // ✅ Clean list. Supabase adds 'openid', 'profile', 'email' automatically.
+  // We only ask for the Data Scopes here.
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "slack_oidc",
     options: {
