@@ -1,27 +1,20 @@
-// app/api/auth/slack/route.js
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export async function GET(request) {
-  const requestUrl = new URL(request.url);
-  const supabase = createRouteHandlerClient({ cookies });
-
-  const callbackUrl = `${requestUrl.origin}/api/auth/slack/callback`;
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "slack_oidc",
-    options: {
-      redirectTo: callbackUrl,
-      // 🔴 NO workspace scopes here
-      scopes: "openid profile email",
-    },
+export async function GET() {
+  const params = new URLSearchParams({
+    client_id: process.env.SLACK_CLIENT_ID,
+    scope: [
+      "channels:read",
+      "channels:history",
+      "groups:history",
+      "im:history",
+      "mpim:history",
+      "users:read"
+    ].join(","),
+    redirect_uri: process.env.SLACK_REDIRECT_URI
   });
 
-  if (error) {
-    console.error(error);
-    return NextResponse.redirect(`${requestUrl.origin}/login`);
-  }
-
-  return NextResponse.redirect(data.url);
+  return NextResponse.redirect(
+    `https://slack.com/oauth/v2/authorize?${params.toString()}`
+  );
 }
