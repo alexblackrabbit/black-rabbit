@@ -1,25 +1,26 @@
+// app/api/auth/slack/route.js
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  const supabase = createRouteHandlerClient({ cookies });
+
   const callbackUrl = `${requestUrl.origin}/api/auth/slack/callback`;
 
-  // ✅ Clean list. Supabase adds 'openid', 'profile', 'email' automatically.
-  // We only ask for the Data Scopes here.
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "slack_oidc",
     options: {
       redirectTo: callbackUrl,
-      scopes: "channels:history channels:read groups:history im:history mpim:history users:read",
+      // 🔴 NO workspace scopes here
+      scopes: "openid profile email",
     },
   });
 
   if (error) {
-    return NextResponse.redirect(`${requestUrl.origin}/login?error=slack_start_failed`);
+    console.error(error);
+    return NextResponse.redirect(`${requestUrl.origin}/login`);
   }
 
   return NextResponse.redirect(data.url);
