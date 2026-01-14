@@ -122,6 +122,7 @@ const styles = {
     fontFamily: "'Inter', sans-serif",
     color: "#fff",
   },
+
   card: {
     width: "420px",
     background: "#0B0B0B",
@@ -134,12 +135,12 @@ const styles = {
     gap: "16px",
   },
 
-  /* BRAND — MATCHES HEADING */
+  /* BRAND — LUXURY LIGHT GREY */
   logo: {
     fontWeight: "800",
     letterSpacing: "0.14em",
     fontSize: "26px",
-    color: "#FFD400",
+    color: "#C9CDD3", // refined light grey (luxury, not flat)
     textAlign: "center",
     marginBottom: "6px",
   },
