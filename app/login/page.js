@@ -35,15 +35,14 @@ export default function LoginPage() {
         });
         if (error) throw error;
 
-        // Email confirmation enabled
         if (!data.session) {
-          setMessage("check your email to confirm your account");
+          setMessage("CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT");
         } else {
           router.push("/dashboard");
         }
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message.toUpperCase());
     } finally {
       setLoading(false);
     }
@@ -55,12 +54,12 @@ export default function LoginPage() {
         <div style={styles.logo}>BLACK RABBIT</div>
 
         <h1 style={styles.heading}>
-          {mode === "login" ? "sign in" : "create account"}
+          {mode === "login" ? "SIGN IN" : "CREATE ACCOUNT"}
         </h1>
 
         <input
           style={styles.input}
-          placeholder="email"
+          placeholder="EMAIL"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -68,7 +67,7 @@ export default function LoginPage() {
 
         <input
           style={styles.input}
-          placeholder="password"
+          placeholder="PASSWORD"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -83,25 +82,25 @@ export default function LoginPage() {
           disabled={loading}
         >
           {loading
-            ? "please wait…"
+            ? "PLEASE WAIT…"
             : mode === "login"
-            ? "sign in"
-            : "register"}
+            ? "SIGN IN"
+            : "REGISTER"}
         </button>
 
         <div style={styles.switch}>
           {mode === "login" ? (
             <>
-              new here?{" "}
+              NEW HERE?{" "}
               <span onClick={() => setMode("register")} style={styles.link}>
-                create an account
+                CREATE AN ACCOUNT
               </span>
             </>
           ) : (
             <>
-              already have an account?{" "}
+              ALREADY HAVE AN ACCOUNT?{" "}
               <span onClick={() => setMode("login")} style={styles.link}>
-                sign in
+                SIGN IN
               </span>
             </>
           )}
@@ -134,32 +133,37 @@ const styles = {
     flexDirection: "column",
     gap: "16px",
   },
+
+  /* BRAND — MATCHES HEADING */
   logo: {
-    fontWeight: "900",
-    letterSpacing: "0.28em",
-    fontSize: "20px",
-    color: "#FFF",
-    marginBottom: "8px",
+    fontWeight: "800",
+    letterSpacing: "0.14em",
+    fontSize: "26px",
+    color: "#FFD400",
     textAlign: "center",
+    marginBottom: "6px",
   },
+
   heading: {
-    fontSize: "24px",
+    fontSize: "22px",
     fontWeight: "800",
     textAlign: "center",
     marginBottom: "28px",
     color: "#FFD400",
     letterSpacing: "0.14em",
-    textTransform: "lowercase",
   },
+
   input: {
     background: "#111",
     border: "1px solid #222",
     borderRadius: "6px",
     padding: "14px",
-    fontSize: "14px",
+    fontSize: "13px",
     color: "#fff",
     outline: "none",
+    letterSpacing: "0.04em",
   },
+
   button: {
     marginTop: "14px",
     background: "#FFD400",
@@ -171,31 +175,37 @@ const styles = {
     fontSize: "12px",
     letterSpacing: "0.18em",
     cursor: "pointer",
-    textTransform: "lowercase",
   },
+
   switch: {
     marginTop: "18px",
     textAlign: "center",
-    fontSize: "12px",
+    fontSize: "11px",
     color: "#888",
+    letterSpacing: "0.08em",
   },
+
   link: {
     color: "#FFD400",
     cursor: "pointer",
     fontWeight: "700",
   },
+
   error: {
     background: "rgba(255,90,95,0.15)",
     color: "#FF5A5F",
     padding: "10px",
     borderRadius: "6px",
-    fontSize: "12px",
+    fontSize: "11px",
+    letterSpacing: "0.08em",
   },
+
   message: {
     background: "rgba(255,212,0,0.15)",
     color: "#FFD400",
     padding: "10px",
     borderRadius: "6px",
-    fontSize: "12px",
+    fontSize: "11px",
+    letterSpacing: "0.08em",
   },
 };
