@@ -10,10 +10,10 @@ export async function GET(req) {
     return NextResponse.redirect("/dashboard?error=slack_no_code");
   }
 
-  // 🔐 Get current logged-in user (cookie-based)
+  // 🔐 Get logged-in Black Rabbit user
   const supabase = createRouteHandlerClient({ cookies });
   const {
-    data: { user }
+    data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
@@ -28,8 +28,8 @@ export async function GET(req) {
       client_id: process.env.SLACK_CLIENT_ID,
       client_secret: process.env.SLACK_CLIENT_SECRET,
       code,
-      redirect_uri: process.env.SLACK_REDIRECT_URI
-    })
+      redirect_uri: process.env.SLACK_REDIRECT_URI,
+    }),
   });
 
   const data = await res.json();
@@ -39,12 +39,21 @@ export async function GET(req) {
     return NextResponse.redirect("/dashboard?error=slack_failed");
   }
 
-  // 💾 Save connection
+  // ✅ THIS IS THE MISSING PIECE
+  const slackUserId = data.authed_user?.id;
+
+  if (!slackUserId) {
+    console.error("No Slack user ID returned", data);
+    return NextResponse.redirect("/dashboard?error=no_slack_user");
+  }
+
+  // 💾 Save FULL connection
   await supabase.from("slack_connections").upsert({
     supabase_user_id: user.id,
+    slack_user_id: slackUserId,     // ← critical
     team_id: data.team.id,
     team_name: data.team.name,
-    bot_token: data.access_token
+    bot_token: data.access_token,
   });
 
   return NextResponse.redirect("/dashboard");
