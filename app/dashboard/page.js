@@ -85,9 +85,8 @@ export default function MissionControl() {
   }, [router, supabase]);
 
   // ───────────── LOADING (UNCHANGED) ─────────────
-  if (loading || slackConnected === null) {
-    return (
-      <div style={styles.loading}>INITIALIZING UPLINK...</div>
+  if (loading) {
+  return <div style={styles.loading}>INITIALIZING UPLINK...</div>;
     );
   }
 
