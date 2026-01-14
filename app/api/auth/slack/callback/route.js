@@ -2,55 +2,34 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
-export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
+export async function GET(request) {
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
 
-  if (!code) {
-    return NextResponse.json({ error: "Missing OAuth code" }, { status: 400 });
+  if (code) {
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    // 🔑 CRITICAL: This exchanges the code for a session and sets the cookie.
+    // Without this, the browser remains "logged out".
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error && session) {
+      // ✅ OPTIONAL: If you still need to save the Slack ID to your table, 
+      // you can do it here using the session data (NOT a manual fetch).
+      
+      /* const slackUserId = session.user.user_metadata.provider_id; // Slack ID comes from here now
+      await supabase
+        .from("slack_users")
+        .upsert({ 
+           supabase_user_id: session.user.id,
+           id: slackUserId,
+           email: session.user.email
+        });
+      */
+    }
   }
 
-  // 1️⃣ Require existing Black Rabbit session
-  const supabase = createRouteHandlerClient({ cookies });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      { error: "Must be logged into Black Rabbit first" },
-      { status: 401 }
-    );
-  }
-
-  // 2️⃣ Exchange Slack code for OpenID identity
-  const tokenRes = await fetch("https://slack.com/api/openid.connect.token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: process.env.SLACK_CLIENT_ID,
-      client_secret: process.env.SLACK_CLIENT_SECRET,
-      code,
-      redirect_uri: process.env.SLACK_REDIRECT_URI,
-    }),
-  });
-
-  const tokenData = await tokenRes.json();
-
-  if (!tokenData.ok) {
-    console.error("Slack OAuth error:", tokenData);
-    return NextResponse.json({ error: "Slack OAuth failed" }, { status: 401 });
-  }
-
-  const slackUserId = tokenData.sub;
-
-  // 3️⃣ Link Slack user → existing Black Rabbit user
-  await supabase
-    .from("slack_users")
-    .update({ supabase_user_id: user.id })
-    .eq("id", slackUserId);
-
-  // 4️⃣ Redirect back to dashboard
-  return NextResponse.redirect(new URL("/dashboard", req.url));
+  // 🚀 Redirect to Dashboard (now with a valid cookie)
+  return NextResponse.redirect(`${requestUrl.origin}/`);
 }
