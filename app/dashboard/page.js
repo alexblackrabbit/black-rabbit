@@ -86,7 +86,7 @@ export default function MissionControl() {
 
   // ───────────── LOADING (UNCHANGED) ─────────────
   if (loading) {
-  return <div style={styles.loading}>INITIALIZING UPLINK...</div>;
+  return <div style={styles.loading}>INITIALIZING UPLINK...</div>
     );
   }
 
