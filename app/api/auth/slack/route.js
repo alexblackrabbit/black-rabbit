@@ -8,16 +8,16 @@ export async function GET(request) {
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
   // 1. Tell Supabase where to send the user after Slack says "Yes"
-  // This must match the URL you added to the Supabase Dashboard
   const callbackUrl = `${requestUrl.origin}/api/auth/slack/callback`;
 
-  // 2. Start the OAuth process using Supabase
+  // 2. Start the OAuth process using the NEW provider
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "slack",
+    // ⚡️ CHANGE THIS: 'slack' -> 'slack_oidc'
+    provider: "slack_oidc", 
     options: {
       redirectTo: callbackUrl,
-      // 🔑 CRITICAL: These scopes allow you to actually read the data for your dashboard
-      scopes: "channels:history,channels:read,groups:history,im:history,mpim:history,users:read", 
+      // Keep your permissions requests here
+      scopes: "channels:history,channels:read,groups:history,im:history,mpim:history,users:read,openid,profile,email", 
     },
   });
 
